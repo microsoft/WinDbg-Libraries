@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Microsoft.Debugging.DataModel.CppLib</id>
+    <version>1.0.0</version>
+    <description>A header-only C++ library for producing and consuming data from the debugger data model.</description>
+    <authors>Microsoft</authors>
+    <license type="expression">MIT</license>
+    <projectUrl>https://aka.ms/DbgModelCppLib</projectUrl>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+  </metadata>
+  <files>
+    <file src="DbgModelCppLib\DbgModelClientEx.h" target="build\native\include"/>
+    <file src="DbgModelCppLib\Microsoft.Debugging.DataModel.CppLib.targets" target="build\native"/>
+  </files>
+</package>
