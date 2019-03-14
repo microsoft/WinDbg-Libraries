@@ -6,8 +6,10 @@
     <description>A header-only C++ library for producing and consuming data from the debugger data model.</description>
     <authors>Microsoft</authors>
     <license type="expression">MIT</license>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <projectUrl>https://aka.ms/DbgModelCppLib</projectUrl>
     <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+    <tags>native datamodel debugging</tags>
   </metadata>
   <files>
     <file src="DbgModelCppLib\DbgModelClientEx.h" target="build\native\include"/>
