@@ -1,13 +1,16 @@
 # Introduction
-DbgModelClientEx.h
-
-# Building
-
-# Overview
-The [[Data Model C++ Object Interfaces|COM style interfaces]] to the data model can be very verbose to implement. While they allow for full manipulation of the data model, they require implementation of a lot of small interfaces to extend the data model (e.g.: an IModelPropertyAccessor implementation for each dynamic fetchable property which is added). In addition to this, the HRESULT based programming model adds a significant amount of boiler plate code in terms of error checking.
+The [Data Model C++ Object Interfaces](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/data-model-cpp-interfaces) to the data model can be very verbose to implement. While they allow for full manipulation of the data model, they require implementation of a lot of small interfaces to extend the data model (e.g.: an IModelPropertyAccessor implementation for each dynamic fetchable property which is added). In addition to this, the HRESULT based programming model adds a significant amount of boiler plate code in terms of error checking.
 
 In order to alleviate some of this, we have a full C++ helper library for the data model which embraces a full C++ exception and template programming paradigm. Both consumption of the data model and extension of the data model can have considerably more concise code with this library than writing against the COM API.
 
+# Building
+The easiest way to use this is through our nuget feed:
+* TODO - Add nuget link
+
+For an example, you can start from the sample in our [WinDbg-Samples repo](https://github.com/Microsoft/WinDbg-Samples):
+* TODO - Add full sample link
+
+# How to use
 There are two important namespaces in the helper library:
 
 * `Debugger::DataModel::ClientEx` - helpers for consumption of the data model
