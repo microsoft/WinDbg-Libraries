@@ -155,10 +155,28 @@ Object keyValue = myStruct.KeyValue(L"ProjectedValue");
 intVal = (int)keyValue;
  ```
 
-Fields and keys can also be enumerated through standard C++ means. (``Note: this is not implemented for keys yet``):
+Fields and keys can also be enumerated through standard C++ means:
 
  ```cpp
-// @TODO:
+Object myObject = GetMyObject(); // get some object with keys and fields
+for (auto&& kvm : myObject.Keys())
+{
+    // kvm is a tuple of <name, value, metadata>
+    const std::wstring& keyName = std::get<0>(kvm);
+    Object keyValue = std::get<1>(kvm);
+    Metadata keyMetadata = std::get<2>(kvm);
+    
+    // Do something with the key name, value, and metadata
+}
+
+for (auto&& kv : myObject.Fields())
+{
+    // kv is a pair of <name, value>
+    const std::wstring& fieldName = kv.first;
+    Object fieldValue = kv.second;
+    
+    // Do something with the field name and value
+}
  ```
 
 #### Iterating Objects
