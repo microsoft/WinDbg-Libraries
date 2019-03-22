@@ -4,8 +4,7 @@ The [Data Model C++ Object Interfaces](https://docs.microsoft.com/en-us/windows-
 In order to alleviate some of this, we have a full C++ helper library for the data model which embraces a full C++ exception and template programming paradigm. Both consumption of the data model and extension of the data model can have considerably more concise code with this library than writing against the COM API.
 
 # Building
-The easiest way to use this is through our nuget feed:
-* TODO - Add nuget link
+The easiest way to use this is through our nuget feed: https://www.nuget.org/packages/Microsoft.Debugging.DataModel.CppLib/
 
 For an example, you can start from the sample in our [WinDbg-Samples repo](https://github.com/Microsoft/WinDbg-Samples):
 * TODO - Add full sample link
