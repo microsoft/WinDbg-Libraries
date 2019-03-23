@@ -6,8 +6,7 @@ In order to alleviate some of this, we have a full C++ helper library for the da
 # Building
 The easiest way to use this is through our nuget feed: https://www.nuget.org/packages/Microsoft.Debugging.DataModel.CppLib/
 
-For an example, you can start from the sample in our [WinDbg-Samples repo](https://github.com/Microsoft/WinDbg-Samples):
-* TODO - Add full sample link
+For an example, you can start from the sample in our [WinDbg-Samples repo](https://github.com/Microsoft/WinDbg-Samples): https://github.com/Microsoft/WinDbg-Samples/tree/master/DataModelHelloWorld/Cpp
 
 # How to use
 There are two important namespaces in the helper library:
