@@ -7823,6 +7823,8 @@ inline Object Object::ConstructInstance(Deconstruction& deconstruction)
     return Object(std::move(spInstance));
 }
 
+#endif // __DBGMODEL_TEST_H__
+
 namespace Details
 {
     template<typename TTuple, size_t i, size_t remaining>
@@ -7849,9 +7851,6 @@ namespace Details
         Unpacker<TTuple, i + 1, remaining - 1>::UnpackInto(packSize, ppArgumentPack, tuple);
     }
 }
-
-#endif // __DBGMODEL_TEST_H__
-
 } // ClientEx
 
 //**************************************************************************
