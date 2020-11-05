@@ -602,7 +602,7 @@ namespace Details
         //
         // Returns a child symbol.
         //
-        TSymChild operator[](_In_z_ const wchar_t *childName)
+        TSymChild operator[](_In_z_ const wchar_t *childName) const
         {
             ComPtr<IDebugHostSymbolEnumerator> spEnum;
             CheckHr(m_sym->EnumerateChildren(m_enumKind, childName, &spEnum));
