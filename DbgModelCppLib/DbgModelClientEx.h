@@ -451,6 +451,42 @@ template<typename TDestSymbol> TDestSymbol symbol_cast(_In_ const Symbol& src);
 
 namespace Details
 {
+    //*************************************************
+    // String Extraction:
+    //
+
+    template<typename TArg> struct StringExtractorHelper;
+
+    template<>
+    struct StringExtractorHelper<wchar_t*>
+    {
+      static _Ret_z_ const wchar_t* GetString(_In_z_ const wchar_t* pc) { return pc; }
+    };
+
+    template<>
+    struct StringExtractorHelper<const wchar_t*>
+    {
+      static _Ret_z_ const wchar_t* GetString(_In_z_ const wchar_t* pc) { return pc; }
+    };
+
+    template<>
+    struct StringExtractorHelper<std::wstring>
+    {
+      static _Ret_z_ const wchar_t* GetString(_In_ const std::wstring& str) { return str.c_str(); }
+    };
+
+    // ExtractString():
+    //
+    // Extracts a const wchar_t * from the incoming argument.  This allows generic passing of anything we
+    // can pull a string from (e.g.: wchar_t *, std::wstring).
+    //
+    template<typename TArg>
+    _Ret_z_ const wchar_t* ExtractString(TArg&& str)
+    {
+      return StringExtractorHelper<std::decay_t<TArg>>::GetString(std::forward<TArg>(str));
+    }
+
+
     // SymbolChildrenRef:
     //
     // Returned from Children() (or another such method) to represent all (or a subset of) children of
@@ -3351,41 +3387,6 @@ namespace Details
         ComPtr<IModelIterator> m_spIterator;
         size_t m_pos;
     };
-
-    //*************************************************
-    // String Extraction:
-    //
-
-    template<typename TArg> struct StringExtractorHelper;
-
-    template<> 
-    struct StringExtractorHelper<wchar_t *>
-    {
-        static _Ret_z_ const wchar_t *GetString(_In_z_ const wchar_t *pc) { return pc; }
-    };
-
-    template<>
-    struct StringExtractorHelper<const wchar_t *>
-    {
-        static _Ret_z_ const wchar_t *GetString(_In_z_ const wchar_t *pc) { return pc; }
-    };
-
-    template<>
-    struct StringExtractorHelper<std::wstring>
-    {
-        static _Ret_z_ const wchar_t *GetString(_In_ const std::wstring &str) { return str.c_str(); }
-    };
-
-    // ExtractString():
-    //
-    // Extracts a const wchar_t * from the incoming argument.  This allows generic passing of anything we
-    // can pull a string from (e.g.: wchar_t *, std::wstring).
-    //
-    template<typename TArg>
-    _Ret_z_ const wchar_t *ExtractString(TArg&& str)
-    {
-        return StringExtractorHelper<std::decay_t<TArg>>::GetString(std::forward<TArg>(str));
-    }
 
     //*************************************************
     // Key Filling:
