@@ -41,6 +41,12 @@ namespace DataModel
 namespace ClientEx
 {
 
+namespace Details
+{
+    template<typename TArg>
+    _Ret_z_ const wchar_t *ExtractString(TArg&& str);
+}
+
 //**************************************************************************
 //**************************************************************************
 //
@@ -232,7 +238,7 @@ namespace Details
                 bstr_ptr spMsg;
 
                 ComPtr<IStringDisplayableConcept> spStrConv;
-                if (SUCCEEDED(pError->GetConcept(__uuidof(IStringDisplayableConcept), &spStrConv, nullptr)) && 
+                if (SUCCEEDED(pError->GetConcept(__uuidof(IStringDisplayableConcept), &spStrConv, nullptr)) &&
                     SUCCEEDED(spStrConv->ToDisplayString(pError, nullptr, &bstrMsg)))
                 {
                     spMsg.reset(bstrMsg);
@@ -263,7 +269,7 @@ namespace Details
 
                 case E_NOT_SET:
                     throw not_set(msg);
-                
+
                 default:
                     throw hr_exception(hr, msg);
             }
@@ -451,42 +457,6 @@ template<typename TDestSymbol> TDestSymbol symbol_cast(_In_ const Symbol& src);
 
 namespace Details
 {
-    //*************************************************
-    // String Extraction:
-    //
-
-    template<typename TArg> struct StringExtractorHelper;
-
-    template<>
-    struct StringExtractorHelper<wchar_t*>
-    {
-      static _Ret_z_ const wchar_t* GetString(_In_z_ const wchar_t* pc) { return pc; }
-    };
-
-    template<>
-    struct StringExtractorHelper<const wchar_t*>
-    {
-      static _Ret_z_ const wchar_t* GetString(_In_z_ const wchar_t* pc) { return pc; }
-    };
-
-    template<>
-    struct StringExtractorHelper<std::wstring>
-    {
-      static _Ret_z_ const wchar_t* GetString(_In_ const std::wstring& str) { return str.c_str(); }
-    };
-
-    // ExtractString():
-    //
-    // Extracts a const wchar_t * from the incoming argument.  This allows generic passing of anything we
-    // can pull a string from (e.g.: wchar_t *, std::wstring).
-    //
-    template<typename TArg>
-    _Ret_z_ const wchar_t* ExtractString(TArg&& str)
-    {
-      return StringExtractorHelper<std::decay_t<TArg>>::GetString(std::forward<TArg>(str));
-    }
-
-
     // SymbolChildrenRef:
     //
     // Returned from Children() (or another such method) to represent all (or a subset of) children of
@@ -504,14 +474,14 @@ namespace Details
         class SymbolIterator
         {
         public:
-            
+
             using value_type = TSymChild;
             using reference = TSymChild;
             using pointer = const TSymChild *;
             using difference_type = size_t;
             using iterator_category = std::input_iterator_tag;
 
-            SymbolIterator() : m_pos(0) { } 
+            SymbolIterator() : m_pos(0) { }
 
             SymbolIterator(_In_ IDebugHostSymbolEnumerator *pChildEnum) : SymbolIterator(pChildEnum, 0) { }
 
@@ -598,7 +568,7 @@ namespace Details
         {
         }
 
-        // operator[]: 
+        // operator[]:
         //
         // Returns a child symbol.
         //
@@ -674,7 +644,7 @@ namespace Details
             using difference_type = size_t;
             using iterator_category = std::input_iterator_tag;
 
-            GenericArgumentsIterator() : m_pos(0) { } 
+            GenericArgumentsIterator() : m_pos(0) { }
 
             GenericArgumentsIterator(_In_ IDebugHostType *pType) : GenericArgumentsIterator(pType, 0) { }
 
@@ -769,14 +739,14 @@ namespace Details
         //
         // The size of the list of generic parameters.
         //
-        size_t size() const 
-        { 
+        size_t size() const
+        {
             ULONG64 argCount;
             CheckHr(m_spType->GetGenericArgumentCount(&argCount));
             return static_cast<size_t>(argCount);
         }
 
-        // operator[]: 
+        // operator[]:
         //
         // Returns the n-th generic argument.
         //
@@ -826,9 +796,9 @@ namespace Details
             using difference_type = size_t;
             using iterator_category = std::input_iterator_tag;
 
-            ArrayDimensionsIterator() : m_pArrayDimensions(nullptr), m_dimsCount(0), m_pos(0) { } 
+            ArrayDimensionsIterator() : m_pArrayDimensions(nullptr), m_dimsCount(0), m_pos(0) { }
 
-            ArrayDimensionsIterator(_In_ ULONG64 dimsCount, 
+            ArrayDimensionsIterator(_In_ ULONG64 dimsCount,
                                     _In_reads_(dimsCount) pointer pArrayDimensions) :
                                     ArrayDimensionsIterator(dimsCount, pArrayDimensions, 0) { }
 
@@ -924,7 +894,7 @@ namespace Details
         //
         size_t size() const { return static_cast<size_t>(m_dimsCount); }
 
-        // operator[]: 
+        // operator[]:
         //
         // Returns the n-th generic argument.
         //
@@ -939,7 +909,7 @@ namespace Details
 
         iterator begin() const
         {
-            return iterator(m_dimsCount, m_spDims.get()); 
+            return iterator(m_dimsCount, m_spDims.get());
         }
 
         iterator end() const
@@ -978,7 +948,7 @@ namespace Details
             using difference_type = size_t;
             using iterator_category = std::input_iterator_tag;
 
-            ParameterTypesIterator() : m_pos(0) { } 
+            ParameterTypesIterator() : m_pos(0) { }
 
             ParameterTypesIterator(_In_ IDebugHostType *pType) : ParameterTypesIterator(pType, 0) { }
 
@@ -1067,14 +1037,14 @@ namespace Details
         //
         // The size of the list of parameter types.
         //
-        size_t size() const 
-        { 
+        size_t size() const
+        {
             ULONG64 paramCount;
             CheckHr(m_spType->GetFunctionParameterTypeCount(&paramCount));
             return static_cast<size_t>(paramCount);
         }
 
-        // operator[]: 
+        // operator[]:
         //
         // Returns the n-th parameter type.
         //
@@ -1116,7 +1086,7 @@ public:
     HostContext() : m_isDeferred(false) { }
 
     HostContext(_In_ IDebugHostContext *pHostContext)
-    { 
+    {
         m_isDeferred = (pHostContext == USE_CURRENT_HOST_CONTEXT);
         if (!m_isDeferred)
         {
@@ -1132,14 +1102,14 @@ public:
     HostContext& operator=(_In_ const HostContext& src) { m_spHostContext = src.m_spHostContext; m_isDeferred = src.m_isDeferred; return *this; }
     HostContext& operator=(_In_ HostContext&& src) { m_spHostContext = std::move(src.m_spHostContext); m_isDeferred = src.m_isDeferred; return *this; }
 
-    operator IDebugHostContext* () const 
-    { 
+    operator IDebugHostContext* () const
+    {
         if (m_isDeferred) { return USE_CURRENT_HOST_CONTEXT; }
-        return m_spHostContext.Get(); 
+        return m_spHostContext.Get();
     }
 
-    IDebugHostContext* operator->() const 
-    { 
+    IDebugHostContext* operator->() const
+    {
         CheckObject();
         return (IDebugHostContext *)(*this);
     }
@@ -1263,7 +1233,7 @@ public:
     bool IsEmpty() const { return m_spSymbol.Get() == nullptr; }
 
     // SymbolKind():
-    // 
+    //
     // Gets the kind of symbol that this is.
     //
     SymbolKind SymbolKind() const
@@ -2381,8 +2351,12 @@ namespace Details
                 ComPtr<IDebugHostType> spBaseType;
                 GetAdjustedLocationAndBaseType(pContextObject, ppIndexers[0], &ptrValue, &spBaseType);
 
+
+                ComPtr<IDebugHostContext> spCtx;
+                CheckHr(pContextObject->GetContext(&spCtx));
+
                 ComPtr<IModelObject> spObject;
-                CheckHr(GetManager()->CreateTypedObject(nullptr, ptrValue, spBaseType.Get(), &spObject));
+                CheckHr(GetManager()->CreateTypedObject(spCtx.Get(), ptrValue, spBaseType.Get(), &spObject));
 
                 *ppObject = spObject.Detach();
                 return S_OK;
@@ -2444,7 +2418,7 @@ namespace Details
     private:
 
         // GetAdjustedLocationAndBaseType():
-        // 
+        //
         // Performs the underlying pointer math and returns the pointer value (location) and the underlying
         // type.
         //
@@ -2501,7 +2475,7 @@ namespace Details
     //     TObj  is expected to be ClientEx::Object
     //     TPack is parameter pack for the indexing operation (a unique pointer of ClientEx::Object>
     //
-    // @TODO: Reorganize and remove template parameters 
+    // @TODO: Reorganize and remove template parameters
     //
     template<typename TObj, typename TPack>
     class IndexableReference
@@ -2512,8 +2486,8 @@ namespace Details
         //
         // Creates an indexable reference taking ownership of the indexer pack and the indexable.
         //
-        IndexableReference(_In_ size_t packSize, 
-                           _In_ TPack&& indexers, 
+        IndexableReference(_In_ size_t packSize,
+                           _In_ TPack&& indexers,
                            _In_ ComPtr<IIndexableConcept>&& spIndexable,
                            _In_ IModelObject *pSrcObject) :
                            m_packSize(packSize),
@@ -2525,7 +2499,7 @@ namespace Details
 
         // operator Object
         //
-        // Performs a get of the value 
+        // Performs a get of the value
         //
         operator TObj() const
         {
@@ -2550,8 +2524,8 @@ namespace Details
         TObj GetValue() const
         {
             ComPtr<IModelObject> spResult;
-            HRESULT hr = m_spIndexable->GetAt(m_spSrcObject.Get(), 
-                                              m_packSize, 
+            HRESULT hr = m_spIndexable->GetAt(m_spSrcObject.Get(),
+                                              m_packSize,
                                               reinterpret_cast<IModelObject **>(m_indexers.get()),
                                               &spResult,
                                               nullptr);
@@ -2615,7 +2589,7 @@ namespace Details
     class ObjectKeyRef
     {
     public:
-        
+
         ObjectKeyRef() { }
 
         ObjectKeyRef(_In_ TObj&& keyRef) :
@@ -2715,7 +2689,7 @@ namespace Details
 
             using value_type = std::tuple<std::wstring, ObjectKeyRef<TObj, TMeta>, TMeta>;
 
-            KeyIterator() : m_pos(0) { } 
+            KeyIterator() : m_pos(0) { }
 
             KeyIterator(_In_ IKeyEnumerator *pKeyEnum) : KeyIterator(pKeyEnum, 0) { }
 
@@ -2840,7 +2814,7 @@ namespace Details
         {
         }
 
-        // operator[]: 
+        // operator[]:
         //
         // Returns a "reference" to a key.
         //
@@ -2890,7 +2864,7 @@ namespace Details
     public:
 
         ObjectFieldRef() { }
-        
+
         ObjectFieldRef(_In_ TObj&& fieldRef) :
             m_fieldRef(std::move(fieldRef))
         {
@@ -2969,7 +2943,7 @@ namespace Details
 
             using value = std::pair<std::wstring, ObjectFieldRef<TObj>>;
 
-            FieldIterator() : m_pos(0) { } 
+            FieldIterator() : m_pos(0) { }
 
             FieldIterator(_In_ IRawEnumerator *pRawEnum) : FieldIterator(pRawEnum, 0) { }
 
@@ -3095,7 +3069,7 @@ namespace Details
         {
         }
 
-        // operator[]: 
+        // operator[]:
         //
         // Returns a "reference" to a native field.
         //
@@ -3207,7 +3181,6 @@ namespace Details
                 Type ty = m_obj.Type();
                 if (ty != nullptr && ty.GetKind() == TypePointer)
                 {
-                    CheckHr(m_obj->GetContext(&spCtx));
                     ULONG64 addr = (ULONG64)m_obj;
                     Type baseType = ty.BaseType();
                     CheckHr(GetManager()->CreateTypedObjectReference(spCtx.Get(), addr, baseType, &spObj));
@@ -3218,7 +3191,7 @@ namespace Details
             {
                 assignmentRef = m_obj;
             }
-            
+
             if (assignmentRef == nullptr)
             {
                 TObj underlyingValue = GetValue();
@@ -3319,7 +3292,7 @@ namespace Details
             return *this;
         }
 
-        value operator*() 
+        value operator*()
         {
             return m_value;
         }
@@ -3360,7 +3333,7 @@ namespace Details
             MoveForward();
             return cur;
         }
-        
+
     private:
 
         void MoveForward()
@@ -3387,6 +3360,41 @@ namespace Details
         ComPtr<IModelIterator> m_spIterator;
         size_t m_pos;
     };
+
+    //*************************************************
+    // String Extraction:
+    //
+
+    template<typename TArg> struct StringExtractorHelper;
+
+    template<>
+    struct StringExtractorHelper<wchar_t *>
+    {
+        static _Ret_z_ const wchar_t *GetString(_In_z_ const wchar_t *pc) { return pc; }
+    };
+
+    template<>
+    struct StringExtractorHelper<const wchar_t *>
+    {
+        static _Ret_z_ const wchar_t *GetString(_In_z_ const wchar_t *pc) { return pc; }
+    };
+
+    template<>
+    struct StringExtractorHelper<std::wstring>
+    {
+        static _Ret_z_ const wchar_t *GetString(_In_ const std::wstring &str) { return str.c_str(); }
+    };
+
+    // ExtractString():
+    //
+    // Extracts a const wchar_t * from the incoming argument.  This allows generic passing of anything we
+    // can pull a string from (e.g.: wchar_t *, std::wstring).
+    //
+    template<typename TArg>
+    _Ret_z_ const wchar_t *ExtractString(TArg&& str)
+    {
+        return StringExtractorHelper<std::decay_t<TArg>>::GetString(std::forward<TArg>(str));
+    }
 
     //*************************************************
     // Key Filling:
@@ -3428,7 +3436,7 @@ namespace Details
     struct KeyFiller<TBase, TStr, TArg, Metadata, TArgs...>
 
     {
-        static void Fill(_In_ TBase *pBase, _In_ TStr&& keyName, _In_ TArg&& value, _In_ Metadata&& metadata,  
+        static void Fill(_In_ TBase *pBase, _In_ TStr&& keyName, _In_ TArg&& value, _In_ Metadata&& metadata,
                          _In_ TArgs&&... remainingInitializers)
         {
             const wchar_t *pStr = ExtractString(keyName);
@@ -3450,7 +3458,7 @@ namespace Details
         static TObj IncrementBy(_In_ const TObj& src, LONG64 increment) { return Adjust(src, increment); }
         static TObj Decrement(_In_ const TObj& src) { return Adjust(src, -1); }
         static TObj DecrementBy(_In_ const TObj& src, LONG64 decrement) { return Adjust(src, decrement); }
-    
+
     private:
 
         static TObj Adjust(_In_ const TObj& src, _In_ LONG64 adjustment)
@@ -3506,7 +3514,7 @@ namespace Details
     // template<typename TArg,
     //          typename = std::enable_if_t<!Details::IsCopyMove_v<Object, TArg>>
     //
-    template<typename T, typename... TArgs> struct IsCopyMove : 
+    template<typename T, typename... TArgs> struct IsCopyMove :
         public std::bool_constant<sizeof...(TArgs) == 1 && std::is_same_v<T, std::decay_t<typename VarTraits<TArgs...>::FirstType>>> { };
     template<typename T, typename... TArgs> constexpr bool IsCopyMove_v = IsCopyMove<T, TArgs...>::value;
 
@@ -3666,8 +3674,8 @@ public:
         const wchar_t *pModuleName = Details::ExtractString(moduleName);
         ComPtr<IDebugHostSymbols> spHostSym;
         ClientEx::CheckHr(ClientEx::GetHost()->QueryInterface(IID_PPV_ARGS(&spHostSym)));
-        ClientEx::CheckHr(spHostSym->CreateTypeSignatureForModuleRange(pSignature, 
-                                                                                pModuleName, 
+        ClientEx::CheckHr(spHostSym->CreateTypeSignatureForModuleRange(pSignature,
+                                                                                pModuleName,
                                                                                 nullptr,
                                                                                 nullptr,
                                                                                 &m_spTypeSignature));
@@ -3686,8 +3694,8 @@ public:
         const wchar_t *pMinVersion = Details::ExtractString(minVersion);
         ComPtr<IDebugHostSymbols> spHostSym;
         ClientEx::CheckHr(ClientEx::GetHost()->QueryInterface(IID_PPV_ARGS(&spHostSym)));
-        ClientEx::CheckHr(spHostSym->CreateTypeSignatureForModuleRange(pSignature, 
-                                                                                pModuleName, 
+        ClientEx::CheckHr(spHostSym->CreateTypeSignatureForModuleRange(pSignature,
+                                                                                pModuleName,
                                                                                 pMinVersion,
                                                                                 nullptr,
                                                                                 &m_spTypeSignature));
@@ -3707,8 +3715,8 @@ public:
         const wchar_t *pMaxVersion = Details::ExtractString(maxVersion);
         ComPtr<IDebugHostSymbols> spHostSym;
         ClientEx::CheckHr(ClientEx::GetHost()->QueryInterface(IID_PPV_ARGS(&spHostSym)));
-        ClientEx::CheckHr(spHostSym->CreateTypeSignatureForModuleRange(pSignature, 
-                                                                                pModuleName, 
+        ClientEx::CheckHr(spHostSym->CreateTypeSignatureForModuleRange(pSignature,
+                                                                                pModuleName,
                                                                                 pMinVersion,
                                                                                 pMaxVersion,
                                                                                 &m_spTypeSignature));
@@ -3755,19 +3763,29 @@ public:
         return *this;
     }
 
-    template<typename... TArgs, 
+    template<typename... TArgs,
              typename = std::enable_if_t<!Details::IsCopyMove_v<Metadata, TArgs...>>>
     explicit Metadata(_In_ TArgs&&... initializers);
 
     operator IKeyStore *() const { return m_spKeyStore.Get(); }
     IKeyStore *operator->() const { return m_spKeyStore.Get(); }
+    IKeyStore *Detach() { return m_spKeyStore.Detach(); }
 
     Object KeyValue(_In_z_ const wchar_t *keyName) const;
 
+    template<typename... TArgs,
+             typename = std::enable_if_t<!Details::IsCopyMove_v<Metadata, TArgs...>>>
+    void SetKeys(_In_ TArgs&&... initializers);
+
 private:
 
-    void Create()
+    void EnsureCreated()
     {
+        if (m_spKeyStore != nullptr)
+        {
+            return;
+        }
+
         CheckHr(GetManager()->CreateMetadataStore(nullptr, &m_spKeyStore));
     }
 
@@ -3819,7 +3837,7 @@ public:
 
     // SessionOf():
     //
-    // Returns the session associated with the given object.  If no session is associated with the 
+    // Returns the session associated with the given object.  If no session is associated with the
     // given object, an exception is thrown.
     //
     static Object SessionOf(_In_ const Object& obj)
@@ -3839,7 +3857,7 @@ public:
 
     // ThreadOf():
     //
-    // Returns the thread associated with the given object.  If no thread is associated with the 
+    // Returns the thread associated with the given object.  If no thread is associated with the
     // given object, an exception is thrown.
     //
     static Object ThreadOf(_In_ const Object& obj)
@@ -3886,6 +3904,29 @@ public:
         Details::KeyFiller<IModelObject, TArgs...>::Fill(spObj.Get(), std::forward<TArgs>(initializers)...);
         return Object(std::move(spObj));
     }
+
+#ifdef __DBGMODEL_TEST_H__
+
+    // Create():
+    //
+    // Creates a new empty object from metadata (key store) with the given context .
+    //
+    template<typename... TArgs>
+    static Object Create(_In_ const HostContext& hostContext, _In_ const Metadata& metadata, _In_ TArgs&&... initializers)
+    {
+        Microsoft::WRL::ComPtr<IDataModelManager4> spDataModelManager4;
+        {
+            Microsoft::WRL::ComPtr<IDataModelManager> spDataModelManager = GetManager();
+            CheckHr(spDataModelManager.As(&spDataModelManager4));
+        }
+
+        ComPtr<IModelObject> spObj;
+        CheckHr(spDataModelManager4->CreateSyntheticObjectFromKeyStore(hostContext, metadata, &spObj));
+        Details::KeyFiller<IModelObject, TArgs...>::Fill(spObj.Get(), std::forward<TArgs>(initializers)...);
+        return Object(std::move(spObj));
+    }
+
+#endif // __DBGMODEL_TEST_H__
 
     // CreateTyped():
     //
@@ -4028,11 +4069,11 @@ public:
 
     template<typename TStr1, typename TStr2>
     static Object FromGlobalSymbol(const HostContext& symbolContext,
-                                   TStr1&& moduleName, 
+                                   TStr1&& moduleName,
                                    TStr2&& symbolName)
     {
         Module symMod(symbolContext, Details::ExtractString(moduleName));
-    
+
         ComPtr<IDebugHostSymbols> spSymbols;
         CheckHr(GetHost()->QueryInterface(IID_PPV_ARGS(&spSymbols)));
 
@@ -4235,10 +4276,21 @@ public:
     // The type of object.  This will return an empty Type() for objects that have no native type.
     //
     Type Type() const
-    { 
+    {
         ComPtr<IDebugHostType> spType;
         CheckHr(m_spObject->GetTypeInfo(&spType));
         return ClientEx::Type(std::move(spType));
+    }
+    
+    // GetLocation():
+    //
+    // The location of the object.  This will throw for objects which have no location.
+    //
+    Location GetLocation() const
+    {
+        Location objLocation;
+        CheckHr(m_spObject->GetLocation(&objLocation));
+        return objLocation;
     }
 
     // Keys():
@@ -4404,7 +4456,7 @@ public:
     {
         return iterator();
     }
-    const_iterator end() const { return cend(); } 
+    const_iterator end() const { return cend(); }
 
     // cbegin():
     //
@@ -4488,7 +4540,7 @@ public:
         return displayString;
     }
     std::optional<std::wstring> TryToDisplayString() const
-    { 
+    {
         return TryToDisplayString(Metadata());
     }
     bool TryToDisplayString(_Out_ std::wstring *pDisplayString, _In_ const Metadata& metadata) const
@@ -4547,12 +4599,12 @@ private:
     }
 
     ComPtr<IModelObject> m_spObject;
-    
+
 };
 
 // IndexedValue:
 //
-// A value which is at a specific index.  
+// A value which is at a specific index.
 //
 template<typename TValue, typename... TIndicies>
 class IndexedValue
@@ -4584,13 +4636,13 @@ private:
 
     ValueType m_value;
     IndiciesType m_indicies;
-    
+
 };
 
 // GeneratedIterable:
 //
 // A value which represents the deferred acquisition of an iterable through a method call.  This is a helper
-// intented to allow the adaptation of an iterable described by a C++ input iterator which can be regenerated 
+// intented to allow the adaptation of an iterable described by a C++ input iterator which can be regenerated
 // to the notion of a data model iterable.  Frequently, this is used to defer the acquisition of a generator
 // which is the result of a property binding or method binding.
 //
@@ -4603,15 +4655,15 @@ private:
 //
 // Instead, if this object is used:
 //
-//     GeneratedIterable<std::experimental::generator<T>> MyProperty(...) 
-//     { 
+//     GeneratedIterable<std::experimental::generator<T>> MyProperty(...)
+//     {
 //          return GeneratedIterable<std::experimental::generator<T>>(
 //              [...](){ co_yield x; }
 //              );
 //     }
 //
 // When the property is fetched, the calling of the method is deferred until the actual iterator fetch.  This way,
-// while a given instance of the iterator behaves akin to a C++ input iterator, the iterator can be fetched 
+// while a given instance of the iterator behaves akin to a C++ input iterator, the iterator can be fetched
 // multiple times.
 //
 // It is important that the returned iterator produce the same elements (aside any semantic manipulations between
@@ -4634,25 +4686,62 @@ public:
     }
 
     std::function<TContainer(void)> const& GetAcquireFunction() const { return m_acquireContainer; }
-    
+
 private:
 
     std::function<TContainer(void)> m_acquireContainer;
+};
+
+template<typename TValue>
+class ValueWithMetadata
+{
+public:
+
+    using ValueType = TValue;
+
+    ValueWithMetadata() = default;
+
+    ValueWithMetadata(_In_ const TValue &value, _In_ Metadata metadata) :
+        m_value(value),
+        m_metadata(std::move(metadata))
+    {
+    }
+    ValueWithMetadata(TValue&& value, Metadata metadata) :
+        m_value(std::move(value)),
+        m_metadata(std::move(metadata))
+    {
+    }
+
+    ValueWithMetadata(_In_ const ValueWithMetadata& src) = default;
+    ValueWithMetadata(_In_ ValueWithMetadata&& src) = default;
+
+    ValueWithMetadata& operator=(_In_ const ValueWithMetadata& src) = default;
+    ValueWithMetadata& operator=(_In_ ValueWithMetadata&& src) = default;
+
+    const ValueType& GetValue() const { return m_value; }
+    ValueType& GetValue() { return m_value; }
+    const Metadata& GetMetadata() const { return m_metadata; }
+    Metadata& GetMetadata() { return m_metadata; }
+
+private:
+
+    ValueType m_value;
+    Metadata m_metadata;
 };
 
 #ifdef __DBGMODEL_TEST_H__
 
 // Deconstruction:
 //
-// Represents the deconstruction of an object from the deconstructable concept.  It is effectively a 
+// Represents the deconstruction of an object from the deconstructable concept.  It is effectively a
 // "limited serialization" of the object.
 //
 class Deconstruction
 {
 public:
 
-    Deconstruction(_In_z_ const wchar_t *pConstructableModel, 
-                   _In_ ULONG64 argCount, 
+    Deconstruction(_In_z_ const wchar_t *pConstructableModel,
+                   _In_ ULONG64 argCount,
                    _In_reads_(argCount) IModelObject **ppArguments) :
         m_constructableModel(pConstructableModel),
         m_arguments(ppArguments, ppArguments + argCount)
@@ -4695,10 +4784,36 @@ private:
 //
 struct ResourceString
 {
-    ResourceString(_In_ ULONG id) : Id(id) { }
-    ResourceString(_In_ const ResourceString& src) : Id(src.Id) { }
+    explicit ResourceString(_In_ ULONG id) : Id(id),
+                                             ResourceType(nullptr),
+                                             Module(nullptr)
+    { }
+
+    ResourceString(_In_ ULONG id, _In_ PCWSTR resourceType) : Id(id),
+                                                              ResourceType(resourceType),
+                                                              Module(nullptr)
+    { }
+
+    ResourceString(_In_ ULONG id, _In_ HMODULE hModule) : Id(id),
+                                                          ResourceType(nullptr),
+                                                          Module(hModule)
+    { }
+
+    ResourceString(_In_ ULONG id,
+                   _In_ PCWSTR resourceType,
+                   _In_ HMODULE hModule) : Id(id),
+                                           ResourceType(resourceType),
+                                           Module(hModule)
+    { }
+
+    ResourceString(_In_ const ResourceString& src) : Id(src.Id),
+                                                     ResourceType(src.ResourceType),
+                                                     Module(src.Module)
+    { }
 
     ULONG Id;
+    PCWSTR ResourceType;
+    HMODULE Module;
 };
 
 //
@@ -4709,7 +4824,7 @@ struct ResourceString
 // string upon being fetched.
 //
 struct DeferredResourceString : public ResourceString
-{ 
+{
     template<typename... TArgs> DeferredResourceString(TArgs&&... args) : ResourceString(std::forward<TArgs>(args)...) { }
 };
 
@@ -4725,84 +4840,84 @@ namespace Details
     //
     // Defines common traits for auto-boxing and auto-unboxing of intrinsic (and intrinsic-like) values.
     //
-    
+
     template<typename TIntrinsic> struct BaseIntrinsicTypeTraits { };
 
-    template<> struct BaseIntrinsicTypeTraits<char> 
-    { 
-        static const VARTYPE VariantType = VT_I1; 
+    template<> struct BaseIntrinsicTypeTraits<char>
+    {
+        static const VARTYPE VariantType = VT_I1;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
-    template<> struct BaseIntrinsicTypeTraits<unsigned char> 
-    { 
-        static const VARTYPE VariantType = VT_UI1; 
+    template<> struct BaseIntrinsicTypeTraits<unsigned char>
+    {
+        static const VARTYPE VariantType = VT_UI1;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
-    template<> struct BaseIntrinsicTypeTraits<short> 
-    { 
-        static const VARTYPE VariantType = VT_I2; 
+    template<> struct BaseIntrinsicTypeTraits<short>
+    {
+        static const VARTYPE VariantType = VT_I2;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
-    template<> struct BaseIntrinsicTypeTraits<unsigned short> 
-    { 
-        static const VARTYPE VariantType = VT_UI2; 
+    template<> struct BaseIntrinsicTypeTraits<unsigned short>
+    {
+        static const VARTYPE VariantType = VT_UI2;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
     template<> struct BaseIntrinsicTypeTraits<int>
-    { 
-        static const VARTYPE VariantType = VT_I4; 
+    {
+        static const VARTYPE VariantType = VT_I4;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
-    template<> struct BaseIntrinsicTypeTraits<unsigned int> 
-    { 
-        static const VARTYPE VariantType = VT_UI4; 
+    template<> struct BaseIntrinsicTypeTraits<unsigned int>
+    {
+        static const VARTYPE VariantType = VT_UI4;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
-    template<> struct BaseIntrinsicTypeTraits<long> 
-    { 
-        static const VARTYPE VariantType = VT_UI4; 
+    template<> struct BaseIntrinsicTypeTraits<long>
+    {
+        static const VARTYPE VariantType = VT_UI4;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
-    template<> struct BaseIntrinsicTypeTraits<unsigned long> 
-    { 
-        static const VARTYPE VariantType = VT_UI4; 
+    template<> struct BaseIntrinsicTypeTraits<unsigned long>
+    {
+        static const VARTYPE VariantType = VT_UI4;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
-    template<> struct BaseIntrinsicTypeTraits<__int64> 
-    { 
-        static const VARTYPE VariantType = VT_I8; 
+    template<> struct BaseIntrinsicTypeTraits<__int64>
+    {
+        static const VARTYPE VariantType = VT_I8;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
-    template<> struct BaseIntrinsicTypeTraits<unsigned __int64> 
-    { 
-        static const VARTYPE VariantType = VT_UI8; 
+    template<> struct BaseIntrinsicTypeTraits<unsigned __int64>
+    {
+        static const VARTYPE VariantType = VT_UI8;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
-    template<> struct BaseIntrinsicTypeTraits<float> 
-    { 
-        static const VARTYPE VariantType = VT_R4; 
+    template<> struct BaseIntrinsicTypeTraits<float>
+    {
+        static const VARTYPE VariantType = VT_R4;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
-    template<> struct BaseIntrinsicTypeTraits<double> 
-    { 
-        static const VARTYPE VariantType = VT_R8; 
+    template<> struct BaseIntrinsicTypeTraits<double>
+    {
+        static const VARTYPE VariantType = VT_R8;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
-    template<> struct BaseIntrinsicTypeTraits<bool> 
-    { 
-        static const VARTYPE VariantType = VT_BOOL; 
+    template<> struct BaseIntrinsicTypeTraits<bool>
+    {
+        static const VARTYPE VariantType = VT_BOOL;
         static const ModelObjectKind ObjectKind = ObjectIntrinsic;
     };
 
@@ -4976,7 +5091,7 @@ namespace Details
     template<class T> constexpr bool has_varianttype_field_v = has_varianttype_field<T>::value;
 
     template<typename T> struct ArrayTraits
-    { 
+    {
         using Type = T;
         static constexpr size_t Size = 0;
     };
@@ -4990,6 +5105,47 @@ namespace Details
 
     template<typename T> using ArrayTraits_t = typename ArrayTraits<T>::Type;
 
+    template<typename T> struct MetadataTraits
+    {
+        static void FillMetadata(T const&, _Outptr_opt_result_maybenull_ IKeyStore **ppMetadata)
+        {
+            if (ppMetadata)
+            {
+                *ppMetadata = nullptr;
+            }
+        }
+    };
+
+    template<typename TVal> struct MetadataTraits<ValueWithMetadata<TVal>>
+    {
+        static void FillMetadata(ValueWithMetadata<TVal>& val, _Outptr_opt_result_maybenull_ IKeyStore **ppMetadata)
+        {
+            if (ppMetadata)
+            {
+                *ppMetadata = val.GetMetadata().Detach();
+            }
+        }
+
+        // For boxed arrays, metadata might end up copied out multiple times, rather than being a transient object that can be detached
+        static void FillMetadata(ValueWithMetadata<TVal> const& val, _Outptr_opt_result_maybenull_ IKeyStore **ppMetadata)
+        {
+            if (ppMetadata)
+            {
+                *ppMetadata = val.GetMetadata();
+                val.GetMetadata()->AddRef();
+            }
+        }
+    };
+
+    // Enable IndexedValue<ValueWithMetadata<...>, ...>
+    template<typename TVal, typename... TIndices> struct MetadataTraits<IndexedValue<TVal, TIndices...>>
+    {
+        static void FillMetadata(IndexedValue<TVal, TIndices...>& val, _Outptr_opt_result_maybenull_ IKeyStore **ppMetadata)
+        {
+            MetadataTraits<TVal>::FillMetadata(val.GetValue(), ppMetadata);
+        }
+    };
+
     template<typename T, typename = void> struct IsIterable : std::false_type { };
     template<typename T> struct IsIterable<T, ClientEx::Details::priv_void_t4<decltype(std::declval<T>().begin()), decltype(std::declval<T>().end())>> : std::true_type { };
 
@@ -4997,7 +5153,7 @@ namespace Details
     template<> struct IsRandomAccessTag<std::random_access_iterator_tag> : std::true_type { };
 
     template<typename T, typename = void> struct IsRandomAccessIterator : std::false_type { };
-    template<typename T> struct IsRandomAccessIterator<T, ClientEx::Details::priv_void_t5<typename std::iterator_traits<T>::iterator_category>> : 
+    template<typename T> struct IsRandomAccessIterator<T, ClientEx::Details::priv_void_t5<typename std::iterator_traits<T>::iterator_category>> :
         IsRandomAccessTag<typename std::iterator_traits<T>::iterator_category> { };
 
     template<typename T> struct IsRandomAccessIterable : IsRandomAccessIterator<decltype(std::declval<T>().begin())> { };
@@ -5017,7 +5173,7 @@ namespace Details
 
         static void CreateIndexers(_In_ const TVal& /*val*/,
                                    _In_ const TIter& /*itBegin*/,
-                                   _In_ const TIter& /*itCur*/, 
+                                   _In_ const TIter& /*itCur*/,
                                    _In_ ULONG64 /*dimensionality*/,
                                    _Out_opt_ ClientEx::Object * /*pIndexers*/)
         {
@@ -5085,9 +5241,9 @@ namespace Details
         }
 
         static void CreateIndexers(_In_ const TVal& /*val*/,
-                                   _In_ const TIter& itBegin, 
-                                   _In_ const TIter& itCur, 
-                                   _In_ ULONG64 dimensionality, 
+                                   _In_ const TIter& itBegin,
+                                   _In_ const TIter& itCur,
+                                   _In_ ULONG64 dimensionality,
                                    _Out_opt_ ClientEx::Object *pIndexers)
         {
             if (dimensionality == 1)
@@ -5114,19 +5270,19 @@ namespace Details
     //*************************************************
     // VarArgs unpack analysis:
     //
-    // If the last two arguments to any method we bind to are 
+    // If the last two arguments to any method we bind to are
     //
     //     (size_t, Object *)
     //
-    // the function is varargs. We unpack and type match the static types before 
-    // the size_t, Object * and then put the remainder of the arguments in the 
+    // the function is varargs. We unpack and type match the static types before
+    // the size_t, Object * and then put the remainder of the arguments in the
     // list defined by those two arguments.
     //
     // These helpers analyze the type signature of a method to determine if it is
     // a var args method and whether a given position is the var args position.
     //
 
-    // bool IsVariableArgumentPosition_v<TArgs...> 
+    // bool IsVariableArgumentPosition_v<TArgs...>
     //     determines whether the position at TArgs is a variable argument position (a size_t, Object *) at the end of pack
     //
     // bool HasVariableArguments_v<TArgs...>
@@ -5170,7 +5326,7 @@ namespace Details
 
     // bool HasNonOptionalArguments_v<TArgs...>
     //     determines whether the argument pack in TArgs contains a non optional argument.  That is, it contains a
-    //     non std::optional<TOpt> **UNLESS** that non optional argument is a final size_t, Object * in the 
+    //     non std::optional<TOpt> **UNLESS** that non optional argument is a final size_t, Object * in the
     //     argument pack.
 
     template<typename... TArgs> struct HasNonOptionalArguments : public std::true_type { };
@@ -5224,7 +5380,7 @@ namespace Details
             static_assert(!isCurrentOptional || allNextOptional, "Any std::optional<T> must come before any non optional (or non varArgs) argument");
             return nextOptional;
         }
-        
+
     public:
         static constexpr bool value = (isCurrentOptional | HasNextOptional());
     };
@@ -5313,14 +5469,14 @@ namespace Details
     template<typename TTuple, size_t i, size_t remaining>
     struct RegularUnpacker
     {
-        static void UnpackInto(_In_ size_t packSize, 
-                               _In_reads_(packSize) IModelObject **ppArgumentPack, 
+        static void UnpackInto(_In_ size_t packSize,
+                               _In_reads_(packSize) IModelObject **ppArgumentPack,
                                TTuple& tuple);
     };
 
     template<typename TTuple, size_t i, size_t remaining> struct Unpacker : public RegularUnpacker<TTuple, i, remaining> { };
 
-    template<typename TTuple, size_t i, size_t remaining> 
+    template<typename TTuple, size_t i, size_t remaining>
     struct VariableUnpacker
     {
         static void UnpackInto(_In_ size_t packSize, _In_reads_(packSize) IModelObject **ppArgumentPack, TTuple& tuple)
@@ -5365,7 +5521,7 @@ namespace Details
         using Type = typename TupleTypeExtractorHelper<i + 1, extractCount, TArgs...>::Type;
     };
 
-    template<size_t i, size_t extractCount, typename... TArgs> 
+    template<size_t i, size_t extractCount, typename... TArgs>
     struct TupleTypeExtractorHelper
     {
         using Type = typename TupleTypeExtractorHelper2<i, extractCount, TArgs...>::Type;
@@ -5394,7 +5550,7 @@ namespace Details
         using Type = typename std::tuple<TArgs...>;
     };
 
-    template<size_t tupleExtractionCount, typename... TArgs> 
+    template<size_t tupleExtractionCount, typename... TArgs>
     using TupleTypeExtractor_t = typename TupleTypeExtractor<tupleExtractionCount, TArgs...>::Type;
 
     // UnpackValues():
@@ -5413,16 +5569,16 @@ namespace Details
     }
 
 //
-// @TODO: The compiler insists that 't' is unreferenced in the below.  It is not.  Remove the warning 
+// @TODO: The compiler insists that 't' is unreferenced in the below.  It is not.  Remove the warning
 //        by pragma for now.
 //
 #pragma warning(push)
 #pragma warning(disable: 4100)
 
     template <class F, class Tuple, std::size_t... I, typename... TExtraValues>
-    constexpr decltype(auto) ApplyImpl(F&& f, 
-                                       const Object& contextObj, 
-                                       Tuple&& t, 
+    constexpr decltype(auto) ApplyImpl(F&& f,
+                                       const Object& contextObj,
+                                       Tuple&& t,
                                        std::index_sequence<I...>,
                                        TExtraValues&&... extraValues)
     {
@@ -5481,13 +5637,15 @@ namespace Details
     struct InvokeAndBox
     {
         template<typename... TExtraValues>
-        static Object Call(_In_ const TFunc& func, 
-                           _In_ const Object& contextObj, 
+        static Object Call(_In_ const TFunc& func,
+                           _In_ const Object& contextObj,
                            _In_ const TTuple& parameters,
+                           _Outptr_opt_result_maybenull_ IKeyStore **ppMetadata,
                            _In_ TExtraValues&&... extraValues)
         {
             TRet result = Apply(func, contextObj, parameters, std::forward<TExtraValues>(extraValues)...);
-            Object resultObject = BoxObject(result);
+            Object resultObject = BoxObject(std::move(result));
+            MetadataTraits<TRet>::FillMetadata(result, ppMetadata);
             return resultObject;
         }
     };
@@ -5501,12 +5659,17 @@ namespace Details
     struct InvokeAndBox<void, TFunc, TTuple>
     {
         template<typename... TExtraValues>
-        static Object Call(_In_ const TFunc& func, 
-                           _In_ const Object& contextObj, 
-                           _In_ const TTuple& parameters, 
+        static Object Call(_In_ const TFunc& func,
+                           _In_ const Object& contextObj,
+                           _In_ const TTuple& parameters,
+                           _Outptr_opt_result_maybenull_ IKeyStore **ppMetadata,
                            _In_ TExtraValues&&... extraValues)
         {
             Apply(func, contextObj, parameters, std::forward<TExtraValues>(extraValues)...);
+            if (ppMetadata)
+            {
+                *ppMetadata = nullptr;
+            }
             ComPtr<IModelObject> spNoValue;
             CheckHr(GetManager()->CreateNoValue(&spNoValue));
             return Object(std::move(spNoValue));
@@ -5544,7 +5707,7 @@ namespace Details
             Object resultObject = BoxObject(result);
             return resultObject;
         }
-        
+
     };
 
     // InvokeFunctionFromPack:
@@ -5560,6 +5723,7 @@ namespace Details
                                   _In_ const Object& contextObj,
                                   _In_ size_t packSize,
                                   _In_reads_(packSize) IModelObject **ppArgumentPack,
+                                  _Outptr_opt_result_maybenull_ IKeyStore **ppMetadata,
                                   _In_ TExtraValues&&... extraValues)
 
     {
@@ -5596,7 +5760,7 @@ namespace Details
         auto parameters = UnpackValues<packIgnoreCount, TArgs...>(packSize, ppArgumentPack);
 
         return InvokeAndBox<TRet, decltype(func), decltype(parameters)>::
-            template Call<TExtraValues...>(func, contextObj, parameters, std::forward<TExtraValues>(extraValues)...);
+            template Call<TExtraValues...>(func, contextObj, parameters, ppMetadata, std::forward<TExtraValues>(extraValues)...);
     }
 
     // LiteralInvokeFunctionFromPack:
@@ -5651,16 +5815,18 @@ namespace Details
     // passes a set of extra arguments as determined by TExtraValues... to the function.
     //
     template<typename TFunc, typename... TExtraValues>
-    Object InvokeMethodFromPack(_In_ const TFunc& func, 
-                                _In_ const Object& contextObj, 
-                                _In_ size_t packSize, 
+    Object InvokeMethodFromPack(_In_ const TFunc& func,
+                                _In_ const Object& contextObj,
+                                _In_ size_t packSize,
                                 _In_reads_(packSize) IModelObject **pArgumentPack,
+                                _Outptr_opt_result_maybenull_ IKeyStore **ppMetadata,
                                 _In_ TExtraValues&&... extraValues)
     {
-        return InvokeFunctionFromPack(FunctorTraits<TFunc>::FunctionType(func), 
-                                      contextObj, 
-                                      packSize, 
-                                      pArgumentPack, 
+        return InvokeFunctionFromPack(FunctorTraits<TFunc>::FunctionType(func),
+                                      contextObj,
+                                      packSize,
+                                      pArgumentPack,
+                                      ppMetadata,
                                       std::forward<TExtraValues>(extraValues)...);
     }
 
@@ -5668,7 +5834,7 @@ namespace Details
     // Instance Data Packer:
     //
 
-    template<typename TInstance, typename TType> 
+    template<typename TInstance, typename TType>
     struct is_member_data_pointer_of : std::false_type { };
 
     template<typename TInstance, typename TData>
@@ -5693,7 +5859,7 @@ namespace Details
     {
         using DataType = TData;
     };
-    
+
     template<typename... TArgs>
     struct MemberPointerCollectionTupleTypeExtractor
     {
@@ -5745,7 +5911,7 @@ namespace Details
     //
 
     // BoxedProperty:
-    // 
+    //
     // A data model implementation of a property which is bound to a C++ functor.
     //
     template<typename TGetter, typename TSetter>
@@ -5821,7 +5987,7 @@ namespace Details
     };
 
     // BoxedMethod:
-    // 
+    //
     // A data model implementation of a method which is bound to a C++ functor.
     //
     template<typename TFunc>
@@ -5850,13 +6016,13 @@ namespace Details
                           _In_ ULONG64 argCount,
                           _In_reads_(argCount) IModelObject **ppArguments,
                           _COM_Errorptr_ IModelObject ** ppResult,
-                          _COM_Outptr_opt_result_maybenull_ IKeyStore ** /*ppMetadata*/)
+                          _COM_Outptr_opt_result_maybenull_ IKeyStore **ppMetadata)
         {
             Object result;
             try
             {
                 Object contextObj = pContextObject;
-                result = InvokeMethodFromPack(m_func, contextObj, static_cast<size_t>(argCount), ppArguments);
+                result = InvokeMethodFromPack(m_func, contextObj, static_cast<size_t>(argCount), ppArguments, ppMetadata);
             }
             catch(...)
             {
@@ -5966,8 +6132,10 @@ namespace Details
                     throw std::range_error("Out of bounds array index");
                 }
 
-                ClientEx::Object result = m_spArray[static_cast<size_t>(idx)];
+                T const& val = m_spArray[static_cast<size_t>(idx)];
+                ClientEx::Object result = val;
 
+                MetadataTraits<T>::FillMetadata(val, ppMetadata);
                 *ppObject = result.Detach();
             }
             catch(...)
@@ -6072,7 +6240,8 @@ namespace Details
                         return E_BOUNDS;
                     }
 
-                    ClientEx::Object objVal = m_pArray[m_pos];
+                    T const& val = m_pArray[m_pos];
+                    ClientEx::Object objVal = val;
 
                     if (dimensions == 1)
                     {
@@ -6081,6 +6250,7 @@ namespace Details
                     }
 
                     ++m_pos;
+                    MetadataTraits<T>::FillMetadata(val, ppMetadata);
                     *ppObject = objVal.Detach();
                 }
                 catch(...)
@@ -6243,6 +6413,7 @@ namespace Details
                 ++m_itCur;
 
                 IndexerTraits<TVal, TIter, IsRandom>::FillIndexers(dimensions, pIdxs, ppIndexers);
+                MetadataTraits<TVal>::FillMetadata(val, ppMetadata);
                 *ppObject = objVal.Detach();
             }
             catch(...)
@@ -6320,7 +6491,7 @@ namespace Details
             {
                 ThrowIfDetached(m_linkReference);
                 Object obj(pContextObject);
-                
+
                 //
                 // Subtle semantics:
                 //
@@ -6336,9 +6507,9 @@ namespace Details
                 using TGenBase = std::decay_t<GeneratorType>;
                 using TGenPass = std::conditional_t<std::is_reference_v<GeneratorType>, GeneratorType, GeneratorType&&>;
 
-                using ModelIterator = BoundIterator<GeneratorType, 
-                                                    CIterator, 
-                                                    ItemProjectorFunction, 
+                using ModelIterator = BoundIterator<GeneratorType,
+                                                    CIterator,
+                                                    ItemProjectorFunction,
                                                     IsRandomAccessIterator_v<CIterator>>;
 
                 auto itBegin = generator.begin();
@@ -6413,7 +6584,7 @@ namespace Details
             >
     {
     private:
-        
+
         using Base = Microsoft::WRL::Implements<
             Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::RuntimeClassType::ClassicCom>,
             IIndexableConcept,
@@ -6470,6 +6641,7 @@ namespace Details
                 auto val = this->m_itemProjector(*itCur);
                 Object valObject = BoxObject(val);
 
+                MetadataTraits<std::decay_t<decltype(val)>>::FillMetadata(val, ppMetadata);
                 *ppObject = valObject.Detach();
             }
             catch(...)
@@ -6520,8 +6692,8 @@ namespace Details
         using TSetAtFunction = typename FunctorTraits<TSetAt>::FunctionType;
 
         BoundIterableWithIndexable(_In_ DataModelReference&& transferredLinkReference,
-                                   _In_ TClass *pClass, 
-                                   _In_ const TGenProjector& genProjectionFunction, 
+                                   _In_ TClass *pClass,
+                                   _In_ const TGenProjector& genProjectionFunction,
                                    _In_ const TItemProjector& itemProjectionFunction,
                                    _In_ const TGetAt& getAtProjectionFunction,
                                    _In_ const TSetAt& setAtProjectionFunction)
@@ -6570,7 +6742,7 @@ namespace Details
                 }
 
                 Object contextObj = pContextObject;
-                Object idxVal = InvokeFunctionFromPack(m_getAtFunction, contextObj, static_cast<size_t>(indexerCount), ppIndexers);
+                Object idxVal = InvokeFunctionFromPack(m_getAtFunction, contextObj, static_cast<size_t>(indexerCount), ppIndexers, ppMetadata);
 
                 *ppObject = idxVal.Detach();
             }
@@ -6605,7 +6777,7 @@ namespace Details
                 ValueType val = (ValueType)valueObj;
 
                 Object contextObj = pContextObject;
-                Object dummyReturn = InvokeFunctionFromPack(m_setAtFunction, contextObj, static_cast<size_t>(indexerCount), ppIndexers, val);
+                Object dummyReturn = InvokeFunctionFromPack(m_setAtFunction, contextObj, static_cast<size_t>(indexerCount), ppIndexers, nullptr, val);
             }
             catch(...)
             {
@@ -6630,11 +6802,11 @@ namespace Details
     };
 
     template<typename TClass, typename TGenProjector, typename TItemProjector>
-    class BoundIterable : 
+    class BoundIterable :
         public Microsoft::WRL::RuntimeClass<
             Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::RuntimeClassType::ClassicCom>,
-            std::conditional_t<IsRandomAccessIterable_v<typename FunctorTraits<TGenProjector>::ReturnType>, 
-                               BoundIterableIndexableBase<TClass, TGenProjector, TItemProjector>, 
+            std::conditional_t<IsRandomAccessIterable_v<typename FunctorTraits<TGenProjector>::ReturnType>,
+                               BoundIterableIndexableBase<TClass, TGenProjector, TItemProjector>,
                                BoundIterableBase<TClass, TGenProjector, TItemProjector>>
             >
     {
@@ -6649,18 +6821,18 @@ namespace Details
                                                                           itemProjectionFunction,
                                                                           pOverrideObject) { }
 
-        BoundIterable(_In_ DataModelReference&& transferredLinkReference, 
-                      _In_ TClass *pClass, 
-                      _In_ const TGenProjector& genProjectionFunction, 
+        BoundIterable(_In_ DataModelReference&& transferredLinkReference,
+                      _In_ TClass *pClass,
+                      _In_ const TGenProjector& genProjectionFunction,
                       _In_ const TItemProjector& itemProjectionFunction) : BoundIterable(std::move(transferredLinkReference),
                                                                                          pClass,
                                                                                          genProjectionFunction,
                                                                                          itemProjectionFunction,
                                                                                          nullptr) { }
 
-        BoundIterable(_In_ DataModelReference&& transferredLinkReference, 
-                      _In_ TClass *pClass, 
-                      _In_ const TGenProjector& genProjectionFunction, 
+        BoundIterable(_In_ DataModelReference&& transferredLinkReference,
+                      _In_ TClass *pClass,
+                      _In_ const TGenProjector& genProjectionFunction,
                       _In_ const TItemProjector& itemProjectionFunction,
                       _In_ IModelObject *pOverrideObject)
         {
@@ -7037,7 +7209,7 @@ namespace Details
 
         SpotLinkReference(_In_ const SpotLinkReference&) =delete;
         SpotLinkReference& operator=(_In_ const SpotLinkReference&) =delete;
-        
+
         DataModelReference m_dataRef;
     };
 
@@ -7067,28 +7239,38 @@ namespace Details
         template<typename TObj>
         static Object Box(_In_ TObj&& iterable)
         {
-            static_assert(std::is_same_v<std::decay_t<TObj>, std::decay_t<TIterable>>, "Illegal argument to BoxObject<T>::Box for an iterable");
+            static_assert(
+                std::is_same_v<std::decay_t<TObj>, std::decay_t<TIterable>> ||
+                std::is_same_v<std::decay_t<TObj>, std::shared_ptr<TIterable>>,
+                "Illegal argument to BoxObject<T>::Box for an iterable");
             //
             // genProjectorFunc is the *HOLDER* of the iterable until such time as it is
             // used.  It remains the holder during iteration.
-            // 
+            //
             // Because we embody the functors in std::function, the lambdas must be copy constructable.  We
-            // cannot directly move iterable into the lambda body.  We must enclose it in something which can be 
+            // cannot directly move iterable into the lambda body.  We must enclose it in something which can be
             // copied but holds a singular unique moved reference to iterable.
             //
-            TIterable *pIterable = new TIterable(std::forward<TObj>(iterable));
-            std::shared_ptr<TIterable> spSharedIterable(pIterable);
+            std::shared_ptr<TIterable> spSharedIterable;
+            if constexpr(std::is_same_v<std::decay_t<TObj>, std::shared_ptr<TIterable>>)
+            {
+                spSharedIterable = std::forward<TObj>(iterable);
+            }
+            else
+            {
+                spSharedIterable.reset(new TIterable(std::forward<TObj>(iterable)));
+            }
             std::shared_ptr<SpotLinkReference> spSpotRef = std::make_shared<SpotLinkReference>();
 
             DataModelReference linkRef = spSpotRef->GetLinkReference();
 
-            auto genProjectorFunc = [heldSpotRef = std::move(spSpotRef), 
-                                     mvIterable = std::move(spSharedIterable)](_In_ const Object& /*emptyObject*/) -> TIterable& 
-            { 
+            auto genProjectorFunc = [heldSpotRef = std::move(spSpotRef),
+                                     mvIterable = std::move(spSharedIterable)](_In_ const Object& /*emptyObject*/) -> TIterable&
+            {
                 return *(mvIterable.get());
             };
 
-            using TItem = decltype(*(std::declval<std::decay_t<TObj>>().begin()));
+            using TItem = decltype(*(std::declval<std::decay_t<TIterable>>().begin()));
             auto itemProjectorFunc = [](_In_ TItem eref) { return eref; };
 
             //
@@ -7102,7 +7284,7 @@ namespace Details
 
             ComPtr<BoundIterable<EmptyBinding, TGenProjector, TItemProjector>> spIterable;
 
-            // NOTE: 
+            // NOTE:
             //
             // The construction of the binding will apply it to the object 'container'.  After
             // the below line, the iterable concept on 'container' is spIterable.
@@ -7128,12 +7310,17 @@ namespace Boxing
     // Function and Method Boxing and Unboxing:
     //
 
-    template<typename T>
-    struct BoxObject : public std::conditional_t<Details::has_call_operator_v<T>, 
-                                                 Details::BoxObjectMethod<T>, 
+    template<typename T, typename = void>
+    struct BoxObject : public std::conditional_t<Details::has_call_operator_v<T>,
+                                                 Details::BoxObjectMethod<T>,
                                                  std::conditional_t<Details::IsIterable_v<T>,
                                                                     Details::BoxObjectIterable<T>,
                                                                     Details::BoxObjectIntrinsic<T>>>
+    {
+    };
+
+    template<typename T>
+    struct BoxObject<std::shared_ptr<T>, std::enable_if_t<Details::IsIterable_v<T>>> : Details::BoxObjectIterable<T>
     {
     };
 
@@ -7156,6 +7343,15 @@ namespace Boxing
     struct BoxObject<IndexedValue<TVal, TIndicies...>>
     {
         static Object Box(_In_ const IndexedValue<TVal, TIndicies...>& src)
+        {
+            return BoxObject<TVal>::Box(src.GetValue());
+        }
+    };
+
+    template<typename TVal>
+    struct BoxObject<ValueWithMetadata<TVal>>
+    {
+        static Object Box(_In_ const ValueWithMetadata<TVal>& src)
         {
             return BoxObject<TVal>::Box(src.GetValue());
         }
@@ -7311,32 +7507,101 @@ namespace Boxing
     {
         static Object Box(_In_ const ResourceString& rscString)
         {
-            struct ModuleHandle
+            struct LibraryUnloader
             {
-                ModuleHandle() : hModule(nullptr) { }
-                ~ModuleHandle() { if (hModule != nullptr) { FreeLibrary(hModule); } }
-
-                HMODULE hModule;
+                void operator()(_In_ void * hModule)
+                {
+                    HMODULE hMod = reinterpret_cast<HMODULE>(hModule);
+                    if (hMod != nullptr)
+                    {
+                        FreeLibrary(hMod);
+                    }
+                }
             };
 
-            ModuleHandle h;
-            PWSTR pString;
+            using hmodule_ptr = std::unique_ptr<void, LibraryUnloader>;
+            hmodule_ptr spModuleHandle;
 
-            if (!GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-                                   reinterpret_cast<LPCTSTR>(Box),
-                                   &h.hModule))
-            {
-                throw hr_exception(HRESULT_FROM_WIN32(GetLastError()), "Unable to retrieve resource string");
-            }
+            HMODULE hModule = rscString.Module;
 
-            INT result = ::LoadStringW(h.hModule, rscString.Id, reinterpret_cast<PWSTR>(&pString), 0);
-            if (!result)
+            if (hModule == nullptr)
             {
-                throw hr_exception(HRESULT_FROM_WIN32(GetLastError()), "Unable to retrieve resource string");
+                if (!GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+                                       reinterpret_cast<LPCTSTR>(Box),
+                                       &hModule))
+                {
+                    throw hr_exception(HRESULT_FROM_WIN32(GetLastError()), "Unable to retrieve resource string");
+                }
+
+                spModuleHandle.reset(hModule);
             }
 
             std::wstring extractedString;
-            extractedString.append(pString, static_cast<size_t>(result));
+
+            if (rscString.ResourceType == nullptr)
+            {
+                PWSTR pString;
+                INT result = ::LoadStringW(hModule, rscString.Id, reinterpret_cast<PWSTR>(&pString), 0);
+                if (!result)
+                {
+                    throw hr_exception(HRESULT_FROM_WIN32(GetLastError()), "Unable to retrieve resource string");
+                }
+
+                extractedString.append(pString, static_cast<size_t>(result));
+            }
+            else
+            {
+                HRSRC resourceInfo = FindResourceW(hModule, MAKEINTRESOURCEW(rscString.Id), rscString.ResourceType);
+
+                if (resourceInfo == NULL)
+                {
+                    throw hr_exception(HRESULT_FROM_WIN32(GetLastError()), "Unable to retrieve find resource");
+                }
+
+                DWORD dwResourceSize = SizeofResource(hModule, resourceInfo);
+                if (dwResourceSize == 0)
+                {
+                    throw hr_exception(HRESULT_FROM_WIN32(GetLastError()), "Failed to get length of the resource");
+                }
+
+                HGLOBAL resourceHandle = LoadResource(hModule, resourceInfo);
+                if (resourceHandle == NULL)
+                {
+                    throw hr_exception(HRESULT_FROM_WIN32(GetLastError()), "Failed to load resource for module.");
+                }
+
+                LPWSTR data = static_cast<LPWSTR>(LockResource(resourceHandle));
+                if (data == nullptr)
+                {
+                    throw hr_exception(HRESULT_FROM_WIN32(GetLastError()), "Failed to lock resource");
+                }
+
+                DWORD cchData = dwResourceSize / sizeof(wchar_t);
+
+                // Check for a UTF-16 little endian byte-order mark and skip it if there is one
+                if ((cchData > 0) && (data[0] == 0xfeff))
+                {
+                    data += 1;
+                    cchData -= 1;
+
+                    BSTR resourceString = SysAllocStringLen(data, cchData);
+                    if (resourceString == nullptr)
+                    {
+                        throw hr_exception(E_OUTOFMEMORY, "Failed to allocate string memory for resource");
+                    }
+                    bstr_ptr spResourceString(resourceString);
+
+                    extractedString = resourceString;
+                }
+                else
+                {
+                    LPSTR stringData = reinterpret_cast<LPSTR>(data);
+                    cchData = dwResourceSize;
+
+                    std::string strResource(stringData, cchData);
+                    extractedString = Details::StringUtils::GetWideString(strResource.c_str());
+                }
+            }
             return BoxObject<std::wstring>::Box(extractedString);
         }
     };
@@ -7508,15 +7773,15 @@ namespace Boxing
             //
             // genProjectorFunc holds the functor and calls it to produce the iterable for the
             // BoundIterable.
-            // 
+            //
             std::shared_ptr<Details::SpotLinkReference> spSpotRef = std::make_shared<Details::SpotLinkReference>();
             std::function<TContainer(void)> acquireFunction = src.GetAcquireFunction();
 
             Details::DataModelReference linkRef = spSpotRef->GetLinkReference();
 
-            auto genProjectorFunc = [heldSpotRef = std::move(spSpotRef), 
-                                     acquireFunction = std::move(acquireFunction)](_In_ const Object& /*emptyObject*/) -> TContainer 
-            { 
+            auto genProjectorFunc = [heldSpotRef = std::move(spSpotRef),
+                                     acquireFunction = std::move(acquireFunction)](_In_ const Object& /*emptyObject*/) -> TContainer
+            {
                 return acquireFunction();
             };
 
@@ -7534,7 +7799,7 @@ namespace Boxing
 
             ComPtr<Details::BoundIterable<Details::EmptyBinding, TGenProjector, TItemProjector>> spIterable;
 
-            // NOTE: 
+            // NOTE:
             //
             // The construction of the binding will apply it to the object 'container'.  After
             // the below line, the iterable concept on 'container' is spIterable.
@@ -7577,8 +7842,8 @@ namespace Details
     // Class which redirects array types to BoxObjectArray if T is an array and to BoxObject<std::decay_t<T>> for non
     // array types.
     //
-    template<typename T> struct BoxSelector : 
-        public std::conditional_t<std::is_array_v<T>, 
+    template<typename T> struct BoxSelector :
+        public std::conditional_t<std::is_array_v<T>,
                                   typename Details::BoxObjectArray<Details::ArrayTraits_t<T>, Details::ArrayTraits<T>::Size>,
                                   Boxing::BoxObject<std::decay_t<T>>>
     {
@@ -7596,7 +7861,7 @@ namespace Details
 // New types can be added to the boxer by adding an explicit template specialization.
 //
 template<typename T>
-Object BoxObject(_In_ T&& obj)
+Object BoxObject(T&& obj)
 {
     //
     // template<typename T> ... T&& can bind T to TX& or TX.  We want the base type.
@@ -7781,7 +8046,13 @@ bool Object::IsEqualTo(TArg&& other) const
 template<typename... TArgs, typename TEnable>
 Metadata::Metadata(_In_ TArgs&&... initializers)
 {
-    Create();
+    SetKeys(std::forward<TArgs>(initializers)...);
+}
+
+template<typename... TArgs, typename TEnable>
+void Metadata::SetKeys(_In_ TArgs&&... initializers)
+{
+    EnsureCreated();
     Details::KeyFiller<IKeyStore, TArgs...>::Fill(m_spKeyStore.Get(), std::forward<TArgs>(initializers)...);
 }
 
@@ -7829,8 +8100,8 @@ inline Object Object::ConstructInstance(Deconstruction& deconstruction)
 namespace Details
 {
     template<typename TTuple, size_t i, size_t remaining>
-    void RegularUnpacker<TTuple, i, remaining>::UnpackInto(_In_ size_t packSize, 
-                                                           _In_reads_(packSize) IModelObject **ppArgumentPack, 
+    void RegularUnpacker<TTuple, i, remaining>::UnpackInto(_In_ size_t packSize,
+                                                           _In_reads_(packSize) IModelObject **ppArgumentPack,
                                                            TTuple& tuple)
     {
         using ArgType = std::tuple_element_t<i, TTuple>;
@@ -7852,6 +8123,7 @@ namespace Details
         Unpacker<TTuple, i + 1, remaining - 1>::UnpackInto(packSize, ppArgumentPack, tuple);
     }
 }
+
 } // ClientEx
 
 //**************************************************************************
@@ -7860,7 +8132,7 @@ namespace Details
 // PROVIDER SUPPORT:
 //
 // Notes on terminology:
-// 
+//
 // The abstractions within the ProviderEx namespace fall into supporting two different categories of data
 // models:
 //
@@ -7883,7 +8155,7 @@ namespace Details
 //
 //       - Accessor: Maps a field, method, or concept on TInstance to a method which returns the expected result.  Properties
 //                   are mapped by a getter method accessed via "pointer-to-member-function" on TInstance.  Concepts like
-//                   iterable are mapped to C++ iterator patterns on objects returned by methods accessed via 
+//                   iterable are mapped to C++ iterator patterns on objects returned by methods accessed via
 //                   "pointer-to-member-function"
 //
 // It is important to note that many of the objects created to represent a binding contain a back pointer to the implementation
@@ -7901,23 +8173,22 @@ using namespace Microsoft::WRL;
 namespace Details
 {
     template<typename TClass, typename TRet, typename... TArgs>
-    struct MethodInvocationBoxHelper
+    struct MethodInvocationHelper
     {
-        static ClientEx::Object CallAndBox(_In_ TClass *pDerived, 
-                                           _In_ TRet (TClass::*classMethod)(TArgs...), 
-                                           _In_ TArgs... methodArgs)
+        static TRet Call(_In_ TClass *pDerived,
+                         _In_ TRet (TClass::*classMethod)(TArgs...),
+                         _In_ TArgs... methodArgs)
         {
-            auto val = (pDerived->*classMethod)(std::forward<TArgs>(methodArgs)...);
-            return ClientEx::BoxObject(std::move(val));
+            return (pDerived->*classMethod)(std::forward<TArgs>(methodArgs)...);
         }
     };
 
     template<typename TClass, typename... TArgs>
-    struct MethodInvocationBoxHelper<TClass, void, TArgs...>
+    struct MethodInvocationHelper<TClass, void, TArgs...>
     {
-        static ClientEx::Object CallAndBox(_In_ TClass *pDerived,
-                                           _In_ void (TClass::*classMethod)(TArgs...),
-                                           _In_ TArgs... methodArgs)
+        static ClientEx::Object Call(_In_ TClass *pDerived,
+                                     _In_ void (TClass::*classMethod)(TArgs...),
+                                     _In_ TArgs... methodArgs)
         {
             (pDerived->*classMethod)(std::forward<TArgs>(methodArgs)...);
             ComPtr<IModelObject> spNoValue;
@@ -7925,6 +8196,12 @@ namespace Details
             return ClientEx::Object(std::move(spNoValue));
         }
     };
+
+    template<typename T> struct is_object : public std::is_same<std::decay_t<T>, ClientEx::Object> { };
+    template<typename T> constexpr bool is_object_v = is_object<T>::value;
+
+    template<typename T> struct is_metadata : public std::is_same<std::decay_t<T>, ClientEx::Metadata> { };
+    template<typename T> constexpr bool is_metadata_v = is_metadata<T>::value;
 } // Details
 
 //*************************************************
@@ -8102,47 +8379,62 @@ public:
 
     NamespacePropertyParent() { }
 
-    NamespacePropertyParent(_In_ const NamespacePropertyParent& src) : 
+    NamespacePropertyParent(_In_ const NamespacePropertyParent& src) :
         m_modelName(src.m_modelName),
         m_namespaceName(src.m_namespaceName),
-        m_propertyName(src.m_propertyName)
+        m_propertyName(src.m_propertyName),
+        m_metadata(src.m_metadata)
     {
     }
 
-    NamespacePropertyParent(_In_ NamespacePropertyParent&& src) : 
+    NamespacePropertyParent(_In_ NamespacePropertyParent&& src) :
         m_modelName(std::move(src.m_modelName)),
         m_namespaceName(std::move(src.m_namespaceName)),
-        m_propertyName(std::move(src.m_propertyName))
+        m_propertyName(std::move(src.m_propertyName)),
+        m_metadata(std::move(src.m_metadata))
     {
     }
 
     template<typename TStr1, typename TStr2, typename TStr3>
-    NamespacePropertyParent(_In_ TStr1&& modelName, _In_ TStr2&& namespaceName, _In_ TStr3&& propertyName)
+    NamespacePropertyParent(_In_ TStr1&& modelName, _In_ TStr2&& namespaceName, _In_ TStr3&& propertyName) :
+        m_metadata(ClientEx::Metadata())
     {
         m_modelName = ClientEx::Details::ExtractString(modelName);
         m_namespaceName = ClientEx::Details::ExtractString(namespaceName);
         m_propertyName = ClientEx::Details::ExtractString(propertyName);
     }
 
-    NamespacePropertyParent& operator=(_In_ const NamespacePropertyParent& src) 
+    template<typename TStr1, typename TStr2, typename TStr3>
+    NamespacePropertyParent(_In_ TStr1&& modelName, _In_ TStr2&& namespaceName, _In_ TStr3&& propertyName, _In_ ClientEx::Metadata metadata) :
+        m_metadata(std::move(metadata))
+    {
+        m_modelName = ClientEx::Details::ExtractString(modelName);
+        m_namespaceName = ClientEx::Details::ExtractString(namespaceName);
+        m_propertyName = ClientEx::Details::ExtractString(propertyName);
+    }
+
+    NamespacePropertyParent& operator=(_In_ const NamespacePropertyParent& src)
     {
         m_modelName = src.m_modelName;
         m_namespaceName = src.m_namespaceName;
         m_propertyName = src.m_propertyName;
+        m_metadata = src.m_metadata;
         return *this;
     }
 
-    NamespacePropertyParent& operator=(_In_ NamespacePropertyParent&& src) 
+    NamespacePropertyParent& operator=(_In_ NamespacePropertyParent&& src)
     {
         m_modelName = std::move(src.m_modelName);
         m_namespaceName = std::move(src.m_namespaceName);
         m_propertyName = std::move(src.m_propertyName);
+        m_metadata = std::move(src.m_metadata);
         return *this;
     }
 
     const std::wstring& GetModelName() const { return m_modelName; }
     const std::wstring& GetNamespaceName() const { return m_namespaceName; }
     const std::wstring& GetPropertyName() const { return m_propertyName; }
+    const ClientEx::Metadata& GetMetadata() const { return m_metadata; }
 
     void Apply(_In_ const ClientEx::Object& model)
     {
@@ -8158,7 +8450,7 @@ public:
         ClientEx::CheckHr(spManager2->AcquireSubNamespace(m_modelName.c_str(),
                                                           m_namespaceName.c_str(),
                                                           m_propertyName.c_str(),
-                                                          nullptr,
+                                                          m_metadata,
                                                           &spNamespace));
         ClientEx::CheckHr(spNamespace->AddParentModel(model, nullptr, false));
     }
@@ -8181,6 +8473,7 @@ private:
     std::wstring m_modelName;
     std::wstring m_namespaceName;
     std::wstring m_propertyName;
+    ClientEx::Metadata m_metadata;
 };
 
 #ifdef __DBGMODEL_TEST_H__
@@ -8231,7 +8524,7 @@ public:
             auto callFilter = [linkRef = std::move(callLinkRef), pInstance, validateClassMethod](TObj contextObj)
             {
                 ClientEx::Details::ThrowIfDetached(linkRef);
-                return Details::MethodInvocationBoxHelper<TClass, bool, TObj>::CallAndBox(
+                return Details::MethodInvocationHelper<TClass, bool, TObj>::Call(
                     pInstance,
                     validateClassMethod,
                     contextObj
@@ -8343,13 +8636,23 @@ namespace Details
     };
 
     template<typename TInstance>
-    struct BasicStorage :
+    struct StorageInterface :
         public Microsoft::WRL::RuntimeClass<
             Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::RuntimeClassType::ClassicCom>,
             IPrivateTypeQuery
             >
     {
+        using InstanceData = TInstance;
+
+        virtual TInstance& GetInstance() = 0;
+    };
+
+    template<typename TInstance>
+    struct BasicStorage : StorageInterface<TInstance>
+    {
     public:
+        using InstanceData = TInstance;
+        using StorageData = TInstance;
 
         BasicStorage(_In_ const TInstance& instance, _In_ ULONG64 typeHash) :
             m_instance(instance),
@@ -8363,7 +8666,7 @@ namespace Details
         {
         }
 
-        TInstance& GetInstance()
+        TInstance& GetInstance() override
         {
             return m_instance;
         }
@@ -8378,27 +8681,19 @@ namespace Details
         }
 
     private:
-        
+
         TInstance m_instance;
         ULONG64 m_typeHash;
     };
 
     template<typename TInstance>
-    struct SharedStorage :
-        public Microsoft::WRL::RuntimeClass<
-            Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::RuntimeClassType::ClassicCom>,
-            IPrivateTypeQuery
-            >
+    struct SharedStorage : StorageInterface<TInstance>
     {
     public:
+        using InstanceData = TInstance;
+        using StorageData = std::shared_ptr<TInstance>;
 
-        SharedStorage(_In_ const std::shared_ptr<TInstance>& sharedInstance, _In_ ULONG64 typeHash) :
-            m_spSharedInstance(sharedInstance),
-            m_typeHash(typeHash)
-        {
-        }
-
-        SharedStorage(_In_ std::shared_ptr<TInstance>&& sharedInstance, _In_ ULONG64 typeHash) :
+        SharedStorage(_In_ std::shared_ptr<TInstance> sharedInstance, _In_ ULONG64 typeHash) :
             m_spSharedInstance(std::move(sharedInstance)),
             m_typeHash(typeHash)
         {
@@ -8425,15 +8720,13 @@ namespace Details
     };
 
     template<typename TInstance>
-    struct UniqueStorage :
-        public Microsoft::WRL::RuntimeClass<
-            Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::RuntimeClassType::ClassicCom>,
-            IPrivateTypeQuery
-            >
+    struct UniqueStorage : StorageInterface<TInstance>
     {
     public:
+        using InstanceData = TInstance;
+        using StorageData = std::unique_ptr<TInstance>;
 
-        UniqueStorage(_In_ std::unique_ptr<TInstance>&& uniqueInstance, _In_ ULONG64 typeHash) :
+        UniqueStorage(_In_ std::unique_ptr<TInstance> uniqueInstance, _In_ ULONG64 typeHash) :
             m_spUniqueInstance(std::move(uniqueInstance)),
             m_typeHash(typeHash)
         {
@@ -8460,25 +8753,23 @@ namespace Details
     };
 
     template<typename TInstance>
-    struct StorageType : public BasicStorage<TInstance>
+    struct StorageTraits
     {
-        StorageType(_In_ const TInstance& data, _In_ ULONG64 typeHash) : BasicStorage<TInstance>(data, typeHash) { }
-        StorageType(_In_ TInstance&& data, _In_ ULONG64 typeHash) : BasicStorage<TInstance>(std::move(data), typeHash) { }
-        using InstanceData = TInstance;
-    };
-    
-    template<typename TInstance>
-    struct StorageType<std::shared_ptr<TInstance>> : public SharedStorage<TInstance>
-    {
-        StorageType(_In_ const std::shared_ptr<TInstance>& sharedData, _In_ ULONG64 typeHash) : SharedStorage<TInstance>(sharedData, typeHash) { }
-        StorageType(_In_ std::shared_ptr<TInstance>&& sharedData, _In_ ULONG64 typeHash) : SharedStorage<TInstance>(std::move(sharedData), typeHash) { }
+        using StorageType = typename BasicStorage<TInstance>;
         using InstanceData = TInstance;
     };
 
     template<typename TInstance>
-    struct StorageType<std::unique_ptr<TInstance>> : public UniqueStorage<TInstance>
+    struct StorageTraits<std::shared_ptr<TInstance>>
     {
-        StorageType(_In_ std::unique_ptr<TInstance>&& uniqueData, _In_ ULONG64 typeHash) : UniqueStorage<TInstance>(std::move(uniqueData), typeHash) { }
+        using StorageType = typename SharedStorage<TInstance>;
+        using InstanceData = TInstance;
+    };
+
+    template<typename TInstance>
+    struct StorageTraits<std::unique_ptr<TInstance>>
+    {
+        using StorageType = typename UniqueStorage<TInstance>;
         using InstanceData = TInstance;
     };
 
@@ -8503,7 +8794,7 @@ namespace Details
 
         DataModelConcept(_In_ TClass *pClass, _In_ NameMethod nameMethod) : m_pClass(pClass), m_nameMethod(nameMethod) { }
 
-        //************************************************* 
+        //*************************************************
         // IDataModelConcept:
         //
 
@@ -8546,7 +8837,7 @@ namespace Details
         public Microsoft::WRL::RuntimeClass<
             Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::RuntimeClassType::ClassicCom>,
             IStringDisplayableConcept
-            >   
+            >
     {
     public:
 
@@ -8605,7 +8896,7 @@ namespace Details
         public Microsoft::WRL::RuntimeClass<
             Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::RuntimeClassType::ClassicCom>,
             IConstructableConcept
-            >   
+            >
     {
     public:
 
@@ -8675,7 +8966,7 @@ namespace Details
             Apply();
         }
 
-        //************************************************* 
+        //*************************************************
         // IDeconstructableConcept:
         //
 
@@ -8742,7 +9033,7 @@ namespace Details
         }
 
     private:
-        
+
         void Apply()
         {
             m_pClass->GetObject()->SetConcept(__uuidof(IDeconstructableConcept), static_cast<IDeconstructableConcept *>(this), nullptr);
@@ -8771,7 +9062,7 @@ namespace Details
     class ExtensionRegistrationListBase
     {
     public:
-        
+
         virtual ~ExtensionRegistrationListBase() { }
     };
 
@@ -8840,11 +9131,11 @@ namespace Details
 
     template<typename TList, size_t i>
     struct ExtensionApplication<TList, i>
-    { 
+    {
         static void Apply(_In_ TList& /*registrationList*/) { }
     };
 
-    template<typename... TArgs> 
+    template<typename... TArgs>
     struct ExtensionNameAcquisition
     {
         static void FillName(_Inout_ std::wstring& /*modelName*/)
@@ -8852,7 +9143,7 @@ namespace Details
         }
     };
 
-    template<typename TArg, typename... TArgs> 
+    template<typename TArg, typename... TArgs>
     struct ExtensionNameAcquisition<TArg, TArgs...>
     {
         static void FillName(_Inout_ std::wstring& modelName, _In_ TArg record, _In_ const TArgs&... records)
@@ -8901,12 +9192,6 @@ namespace Details
         }
     };
 
-    template<typename T> struct is_object : public std::is_same<std::decay_t<T>, ClientEx::Object> { };
-    template<typename T> constexpr bool is_object_v = is_object<T>::value;
-
-    template<typename T> struct is_metadata : public std::is_same<std::decay_t<T>, ClientEx::Metadata> { };
-    template<typename T> constexpr bool is_metadata_v = is_metadata<T>::value;
-
 }
 
 //**************************************************************************
@@ -8920,7 +9205,7 @@ namespace Details
 //
 // TypedInstanceModel<T>:
 //
-//     - You want to project a native type into the data model.  The TypedInstanceModel<T> becomes the "type factory" for 
+//     - You want to project a native type into the data model.  The TypedInstanceModel<T> becomes the "type factory" for
 //       the type T.  In addition to defining this class, the following traits classes should be provided for composability
 //       with Object.  These traits are within "Debugger::DataModel::ClientEx::Boxing"
 //
@@ -8930,6 +9215,10 @@ namespace Details
 //           static Object Box(_In_ const T& val) {...}
 //           static T Unbox(_In_ const Object& obj) {...}
 //       };
+//
+// ExtensionModel:
+//
+//     - You want to create an extension to the data model.
 //
 class BaseDataModel
 {
@@ -9016,7 +9305,7 @@ private:
     ClientEx::Object m_object;
 
     //
-    // The stub which is passed around amongst all shared ownership objects which can refer back to the 
+    // The stub which is passed around amongst all shared ownership objects which can refer back to the
     // type object.  If the linkage is broken, TypeIsLive is false and anything still holding onto
     // this ref should throw (the weak link is broken)
     //
@@ -9037,7 +9326,7 @@ public:
 
     // ExtensionModel():
     //
-    // Construct an extension model and have it register against the data model in the manners specified by 
+    // Construct an extension model and have it register against the data model in the manners specified by
     // the arguments.  Such must be registration records such as TypeSignatureRegistration, etc...
     //
     // If delayedInitialization is true then InitializeModel must be used in the derived constructor
@@ -9052,7 +9341,7 @@ public:
 
     // ExtensionModel():
     //
-    // Construct an extension model and have it register against the data model in the manners specified by 
+    // Construct an extension model and have it register against the data model in the manners specified by
     // the arguments.  Such must be registration records such as TypeSignatureRegistration, etc...
     //
 
@@ -9082,8 +9371,25 @@ public:
     //
     // Adds a new property.
     //
+    template<typename TGetFunc, typename TSetFunc>
+    void AddProperty(_In_z_ const wchar_t *propertyName,
+                     _In_ const TGetFunc& getFunction,    // TValue getFunction([const] Object [&]);
+                     _In_ const TSetFunc& setFunction,    // void setFunction([const] Object [&], [const] TValue [&]);
+                     _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
+    {
+        static_assert(std::is_invocable_v<TGetFunc, ClientEx::Object>, "Bound property getter must take (const) Object (&) as first argument");
+        if constexpr (std::is_invocable_v<TGetFunc, ClientEx::Object>) // Prevent noise from failure of the assertion above
+        {
+            using TValue = std::invoke_result_t<TGetFunc, ClientEx::Object>;
+            static_assert(std::is_invocable_v<TSetFunc, ClientEx::Object, TValue>, "Bound property setter must take (const) Object (&) as first argument");
+
+            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<TGetFunc, TSetFunc>::Box(getFunction, setFunction);
+            ClientEx::CheckHr(GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+        }
+    }
+
     template<typename TObjGet, typename TObjSet, typename TClass, typename TRet, typename TSetValue>
-    void AddProperty(_In_z_ const wchar_t *propertyName, 
+    void AddProperty(_In_z_ const wchar_t *propertyName,
                      _In_ TClass *pDerived,
                      _In_ TRet (TClass::*getClassMethod)(_In_ TObjGet),
                      _In_ void (TClass::*setClassMethod)(_In_ TObjSet, _In_ TSetValue),
@@ -9093,7 +9399,7 @@ public:
         static_assert(Details::is_object_v<TObjSet>, "Bound property setter must take (const) Object (&) as first argument");
 
         ClientEx::Details::DataModelReference getLinkRef = GetLinkReference();
-        auto getFunc = [linkRef = std::move(getLinkRef), pDerived, getClassMethod](_In_ TObjGet instanceObject) 
+        auto getFunc = [linkRef = std::move(getLinkRef), pDerived, getClassMethod](_In_ TObjGet instanceObject)
         {
             ClientEx::Details::ThrowIfDetached(linkRef);
             return (pDerived->*getClassMethod)(instanceObject);
@@ -9108,6 +9414,26 @@ public:
 
         ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
         ClientEx::CheckHr(GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+    }
+
+    template<typename TGetFunc>
+    void AddReadOnlyProperty(_In_z_ const wchar_t *propertyName,
+                             _In_ const TGetFunc& getFunction,    // TValue getFunction([const] Object [&]);
+                             _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
+    {
+        static_assert(std::is_invocable_v<TGetFunc, ClientEx::Object>, "Bound property getter must take (const) Object (&) as first argument");
+        if constexpr (std::is_invocable_v<TGetFunc, ClientEx::Object>) // Prevent noise from failure of the assertion above
+        {
+            using TValue = std::invoke_result_t<TGetFunc, ClientEx::Object>;
+
+            auto setFunc = [](_In_ const ClientEx::Object& /*instanceObject*/, _In_ const TValue& /*anyValue*/)
+            {
+                throw ClientEx::not_implemented();
+            };
+
+            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<TGetFunc, decltype(setFunc)>::Box(getFunction, setFunc);
+            ClientEx::CheckHr(GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+        }
     }
 
     template<typename TObj, typename TClass, typename TRet>
@@ -9148,8 +9474,8 @@ public:
     // Adds a new method.
     //
     template<typename TObj, typename TClass, typename TRet, typename... TArgs>
-    void AddMethod(_In_z_ const wchar_t *methodName, 
-                   _In_ TClass *pDerived, 
+    void AddMethod(_In_z_ const wchar_t *methodName,
+                   _In_ TClass *pDerived,
                    _In_ TRet (TClass::*classMethod)(TObj, TArgs...),
                    _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
     {
@@ -9162,7 +9488,7 @@ public:
         auto callDest = [linkRef = std::move(callLinkRef), pDerived, classMethod](TObj contextObj, TArgs... methodArgs)
         {
             ClientEx::Details::ThrowIfDetached(linkRef);
-            return Details::MethodInvocationBoxHelper<TClass, TRet, TObj, TArgs...>::CallAndBox(
+            return Details::MethodInvocationHelper<TClass, TRet, TObj, TArgs...>::Call(
                 pDerived,
                 classMethod,
                 contextObj,
@@ -9176,8 +9502,8 @@ public:
     }
 
     template<typename TObj, typename TClass, typename TRet, typename... TArgs>
-    void AddMethod(_In_z_ const wchar_t *methodName, 
-                   _In_ const TClass *pDerived, 
+    void AddMethod(_In_z_ const wchar_t *methodName,
+                   _In_ const TClass *pDerived,
                    _In_ TRet (TClass::*classMethod)(TObj, TArgs...) const,
                    _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
     {
@@ -9226,7 +9552,7 @@ public:
         static_assert(Details::is_object_v<TObj1>, "Bound equatable function must take (const) Object (&) as first argument");
         static_assert(Details::is_object_v<TObj2>, "Bound equatable function must take (const) Object (&) as second argument");
         ClientEx::Details::DataModelReference equatableLinkRef = GetLinkReference();
-        auto equatableProjectorFunc = [linkRef = std::move(equatableLinkRef), pDerived, classMethod](TObj1 contextObj, 
+        auto equatableProjectorFunc = [linkRef = std::move(equatableLinkRef), pDerived, classMethod](TObj1 contextObj,
                                                                                                      TObj2 otherObj)
         {
             ClientEx::Details::ThrowIfDetached(linkRef);
@@ -9257,7 +9583,7 @@ public:
         static_assert(Details::is_object_v<TObj1>, "Bound comparable function must take (const) Object (&) as first argument");
         static_assert(Details::is_object_v<TObj2>, "Bound comparable function must take (const) Object (&) as second argument");
         ClientEx::Details::DataModelReference comparableLinkRef = GetLinkReference();
-        auto comparableProjectorFunc = [linkRef = std::move(comparableLinkRef), pDerived, classMethod](TObj1 contextObj, 
+        auto comparableProjectorFunc = [linkRef = std::move(comparableLinkRef), pDerived, classMethod](TObj1 contextObj,
                                                                                                        TObj2 otherObj)
         {
             ClientEx::Details::ThrowIfDetached(linkRef);
@@ -9281,7 +9607,7 @@ public:
     // AddGeneratorFunction():
     //
     // Adds the iterable implementation on this object to the generator (or iterable) returned from the
-    // bound class method.  The supplied generator must be copyable into the resulting data model iterator.  
+    // bound class method.  The supplied generator must be copyable into the resulting data model iterator.
     //
     template<typename TObj, typename TGen, typename TClass>
     void AddGeneratorFunction(_In_ TClass *pDerived, _In_ TGen (TClass::*classMethod)(_In_ TObj))
@@ -9313,7 +9639,7 @@ public:
         ClientEx::Details::DataModelReference iterLinkRef = GetLinkReference();
         ComPtr<ClientEx::Details::BoundIterable<TClass, TGenProjector, TItemProjector>> spIterable;
 
-        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>, 
+        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>,
                       "Implementation class must derive from ProviderEx:: model class");
 
         TClass *pDerivedThis = static_cast<TClass *>(this);
@@ -9329,7 +9655,7 @@ public:
     // TIndicies... must match the indicies arguments of the bound indexer method.
     //
     template<typename TObjGen, typename TObjGet, typename TGen, typename TClass, typename TValue, typename... TIndicies>
-    void AddReadOnlyIndexableGeneratorFunction(_In_ TClass *pDerived, 
+    void AddReadOnlyIndexableGeneratorFunction(_In_ TClass *pDerived,
                                                _In_ TGen (TClass::*generatorMethod)(_In_ TObjGen),
                                                _In_ TValue (TClass::*getAtMethod)(_In_ TObjGet, _In_ TIndicies... indicies))
     {
@@ -9387,7 +9713,7 @@ public:
         ClientEx::Details::DataModelReference iterLinkRef = GetLinkReference();
         ComPtr<ClientEx::Details::BoundIterableWithIndexable<TClass, TGenProjector, TItemProjector, TGetAtProjector, TSetAtProjector>> spIterableIndexable;
 
-        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>, 
+        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>,
                       "Implementation class must derive from ProviderEx:: model class");
 
         TClass *pDerivedThis = static_cast<TClass *>(this);
@@ -9403,11 +9729,11 @@ public:
     // TIndicies... must match the indicies arguments of the bound indexer method.
     //
     template<typename TObjGen, typename TObjGet, typename TObjSet, typename TGen, typename TClass, typename TValue, typename... TIndicies>
-    void AddIndexableGeneratorFunction(_In_ TClass *pDerived, 
+    void AddIndexableGeneratorFunction(_In_ TClass *pDerived,
                                        _In_ TGen (TClass::*generatorMethod)(_In_ TObjGen),
                                        _In_ TValue (TClass::*getAtMethod)(_In_ TObjGet, _In_ TIndicies... indicies),
                                        _In_ void (TClass::*setAtMethod)(_In_ TObjSet, _In_ TValue value, _In_ TIndicies... indicies))
-                                               
+
     {
         static_assert(Details::is_object_v<TObjGen>, "Bound generator function must take (const) Object (&) as first argument");
         static_assert(Details::is_object_v<TObjGet>, "Bound indexer function must take (const) Object (&) as first argument");
@@ -9464,7 +9790,7 @@ public:
         ClientEx::Details::DataModelReference iterLinkRef = GetLinkReference();
         ComPtr<ClientEx::Details::BoundIterableWithIndexable<TClass, TGenProjector, TItemProjector, TGetAtProjector, TSetAtProjector>> spIterableIndexable;
 
-        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>, 
+        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>,
                       "Implementation class must derive from ProviderEx:: model class");
 
         TClass *pDerivedThis = static_cast<TClass *>(this);
@@ -9487,7 +9813,7 @@ public:
 private:
 
     template<typename... TArgs>
-    void CompleteExtensionModelInitialization(_In_ TArgs&&... registrations) 
+    void CompleteExtensionModelInitialization(_In_ TArgs&&... registrations)
     {
         //
         // The first NamedModelRegistration is the canonical name.  Extract it.
@@ -9519,8 +9845,8 @@ class BaseTypedInstanceModel : public BaseDataModel
 {
 public:
 
-    using StorageType = Details::StorageType<TInstance>;
-    using InstanceType = typename Details::StorageType<TInstance>::InstanceData;
+    using StorageType = typename Details::StorageTraits<TInstance>::StorageType;
+    using InstanceType = typename Details::StorageTraits<TInstance>::InstanceData;
 
      // BaseTypedInstanceModel:
      //
@@ -9546,7 +9872,7 @@ public:
             throw std::bad_alloc();
         }
 
-        return (static_cast<StorageType *>(spStorage.Get()))->GetInstance();
+        return (static_cast<Details::StorageInterface<InstanceType> *>(spStorage.Get()))->GetInstance();
     }
 
 protected:
@@ -9600,13 +9926,13 @@ protected:
 };
 
 template<typename TInstance>
-class TypedInstanceModelBaseSelector : public std::conditional_t<ClientEx::Details::IsIterable_v<typename Details::StorageType<TInstance>::InstanceData>, 
-                                                                 IterableTypedInstanceModel<TInstance>, 
+class TypedInstanceModelBaseSelector : public std::conditional_t<ClientEx::Details::IsIterable_v<typename Details::StorageTraits<TInstance>::InstanceData>,
+                                                                 IterableTypedInstanceModel<TInstance>,
                                                                  BaseTypedInstanceModel<TInstance>>
 {
 public:
     TypedInstanceModelBaseSelector(_In_ const ClientEx::Metadata & metadata) :
-        std::conditional_t<ClientEx::Details::IsIterable_v<typename Details::StorageType<TInstance>::InstanceData>,
+        std::conditional_t<ClientEx::Details::IsIterable_v<typename Details::StorageTraits<TInstance>::InstanceData>,
                            IterableTypedInstanceModel<TInstance>,
                            BaseTypedInstanceModel<TInstance>>(metadata)
     {
@@ -9626,6 +9952,9 @@ public:
 template<typename TInstance>
 class TypedInstanceModel : public TypedInstanceModelBaseSelector<TInstance>
 {
+    using StorageType = typename TypedInstanceModelBaseSelector<TInstance>::StorageType;
+    using StorageData = typename StorageType::StorageData;
+
 public:
 
     // TypedInstanceModel():
@@ -9667,7 +9996,6 @@ public:
     //
     ClientEx::Object CreateInstance(_In_ const TInstance& instanceData)
     {
-        using StorageType = typename TypedInstanceModelBaseSelector<TInstance>::StorageType;
         ComPtr<StorageType> spStorage = Make<StorageType>(instanceData, this->GetTypeHash());
         if (spStorage == nullptr)
         {
@@ -9678,8 +10006,29 @@ public:
 
     ClientEx::Object CreateInstance(_In_ TInstance&& instanceData)
     {
-        using StorageType = typename TypedInstanceModelBaseSelector<TInstance>::StorageType;
         ComPtr<StorageType> spStorage = Make<StorageType>(std::move(instanceData), this->GetTypeHash());
+        if (spStorage == nullptr)
+        {
+            throw std::bad_alloc();
+        }
+        return ObjectForStorage(spStorage.Get());
+    }
+
+    std::enable_if_t<std::is_same_v<StorageData, TInstance>, ClientEx::Object>
+    CreateInstance(_In_ std::shared_ptr<TInstance> instanceData)
+    {
+        auto spStorage = Make<Details::SharedStorage<TInstance>>(std::move(instanceData), this->GetTypeHash());
+        if (spStorage == nullptr)
+        {
+            throw std::bad_alloc();
+        }
+        return ObjectForStorage(spStorage.Get());
+    }
+
+    std::enable_if_t<std::is_same_v<StorageData, TInstance>, ClientEx::Object>
+    CreateInstance(_In_ std::unique_ptr<TInstance> instanceData)
+    {
+        auto spStorage = Make<Details::UniqueStorage<TInstance>>(std::move(instanceData), this->GetTypeHash());
         if (spStorage == nullptr)
         {
             throw std::bad_alloc();
@@ -9689,7 +10038,7 @@ public:
 
     // IsObjectInstance():
     //
-    // Returns whether a given object is an instance of a type created by this (or another type equivalent) 
+    // Returns whether a given object is an instance of a type created by this (or another type equivalent)
     // factory.  This method *MUST* be called before any GetStoredInstance() call is made.
     //
     bool IsObjectInstance(_In_ const ClientEx::Object& obj)
@@ -9715,8 +10064,39 @@ protected:
     //
     // Adds a new property.
     //
+    template<typename TGetFunc, typename TSetFunc>
+    void AddProperty(_In_z_ const wchar_t *propertyName,
+                     _In_ const TGetFunc& getFunction,    // TValue getFunction([const] Object [&], [const] TInstance [&]);
+                     _In_ const TSetFunc& setFunction,    // void setFunction([const] Object [&], [const] TInstance [&], [const] TValue [&]);
+                     _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
+    {
+        static_assert(std::is_invocable_v<TGetFunc, ClientEx::Object, TInstance&>, "Bound property getter must take (const) Object (&) as first argument and the instance type as the second");
+        if constexpr (std::is_invocable_v<TGetFunc, ClientEx::Object, TInstance&>) // Prevent noise from failure of the assertion above
+        {
+            using TValue = std::invoke_result_t<TGetFunc, ClientEx::Object, TInstance&>;
+            static_assert(std::is_invocable_v<TSetFunc, ClientEx::Object, TInstance&, TValue>, "Bound property setter must take (const) Object (&) as first argument and the instance type as the second");
+
+            ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
+            auto getFunc = [linkRef = std::move(getLinkRef), this, getFunction](_In_ const ClientEx::Object& instanceObject)
+            {
+                ClientEx::Details::ThrowIfDetached(linkRef);
+                return getFunction(instanceObject, this->GetStoredInstance(instanceObject));
+            };
+
+            ClientEx::Details::DataModelReference setLinkRef = this->GetLinkReference();
+            auto setFunc = [linkRef = std::move(setLinkRef), this, setFunction](_In_ const ClientEx::Object& instanceObject, _In_ TValue val)
+            {
+                ClientEx::Details::ThrowIfDetached(linkRef);
+                setFunction(instanceObject, this->GetStoredInstance(instanceObject), val);
+            };
+
+            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+        }
+    }
+
     template<typename TObjGet, typename TObjSet, typename TClass, typename TRet, typename TSetValue, typename TData1, typename TData2>
-    void AddProperty(_In_z_ const wchar_t *propertyName, 
+    void AddProperty(_In_z_ const wchar_t *propertyName,
                      _In_ TClass *pDerived,
                      _In_ TRet (TClass::*getClassMethod)(_In_ TObjGet, _In_ TData1),
                      _In_ void (TClass::*setClassMethod)(_In_ TObjSet, _In_ TData2, _In_ TSetValue),
@@ -9743,6 +10123,33 @@ protected:
         ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
     }
 
+    template<typename TGetFunc>
+    void AddReadOnlyProperty(_In_z_ const wchar_t *propertyName,
+                             _In_ const TGetFunc& getFunction,    // TValue getFunction([const] Object [&]);
+                             _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
+    {
+        static_assert(std::is_invocable_v<TGetFunc, ClientEx::Object, TInstance&>, "Bound property getter must take (const) Object (&) as first argument and the instance type as the second");
+        if constexpr (std::is_invocable_v<TGetFunc, ClientEx::Object, TInstance&>) // Prevent noise from failure of the assertion above
+        {
+            using TValue = std::invoke_result_t<TGetFunc, ClientEx::Object, TInstance&>;
+
+            ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
+            auto getFunc = [linkRef = std::move(getLinkRef), this, getFunction](_In_ const ClientEx::Object& instanceObject)
+            {
+                ClientEx::Details::ThrowIfDetached(linkRef);
+                return getFunction(instanceObject, this->GetStoredInstance(instanceObject));
+            };
+
+            auto setFunc = [](_In_ const ClientEx::Object& /*instanceObject*/, _In_ const TValue& /*anyValue*/)
+            {
+                throw ClientEx::not_implemented();
+            };
+
+            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+        }
+    }
+
     template<typename TObj, typename TClass, typename TRet, typename TData>
     void AddReadOnlyProperty(_In_z_ const wchar_t *propertyName,
                              _In_ TClass *pDerived,
@@ -9750,7 +10157,7 @@ protected:
                              _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
     {
         static_assert(Details::is_object_v<TObj>, "Bound property getter must take (const) Object (&) as first argument");
-        
+
         ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
         auto getFunc = [linkRef = std::move(getLinkRef), pDerived, getClassMethod](_In_ TObj instanceObject)
         {
@@ -9780,119 +10187,139 @@ protected:
     //
     // Binds a data model property to a field within the instance data.
     //
-    template<typename TData>
-    void BindProperty(_In_z_ const wchar_t *propertyName, 
-                      _In_ TData TInstance::* bindingPointer,
+    template<typename TData, typename TClass>
+    void BindProperty(_In_z_ const wchar_t *propertyName,
+                      _In_  TData TClass::* bindingPointer,
                       _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
     {
-        ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
-        auto getFunc = [linkRef = std::move(getLinkRef), this, bindingPointer](_In_ const ClientEx::Object& instanceObject)
+        static_assert(std::is_base_of_v<TClass, TInstance>, "Must use a pointer to member of the instance type to bind a property");
+        if constexpr (std::is_base_of_v<TClass, TInstance>)
         {
-            ClientEx::Details::ThrowIfDetached(linkRef);
-            auto& data = this->GetStoredInstance(instanceObject);
-            return data.*bindingPointer;
-        };
+            ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
+            auto getFunc = [linkRef = std::move(getLinkRef), this, bindingPointer](_In_ const ClientEx::Object& instanceObject)
+            {
+                ClientEx::Details::ThrowIfDetached(linkRef);
+                auto& data = this->GetStoredInstance(instanceObject);
+                return data.*bindingPointer;
+            };
 
-        ClientEx::Details::DataModelReference setLinkRef = this->GetLinkReference();
-        auto setFunc = [linkRef = std::move(setLinkRef), this, bindingPointer](_In_ const ClientEx::Object& instanceObject, _In_ TData &val)
-        {
-            ClientEx::Details::ThrowIfDetached(linkRef);
-            auto& data = this->GetStoredInstance(instanceObject);
-            data.*bindingPointer = val;
-        };
+            ClientEx::Details::DataModelReference setLinkRef = this->GetLinkReference();
+            auto setFunc = [linkRef = std::move(setLinkRef), this, bindingPointer](_In_ const ClientEx::Object& instanceObject, _In_ TData &val)
+            {
+                ClientEx::Details::ThrowIfDetached(linkRef);
+                auto& data = this->GetStoredInstance(instanceObject);
+                data.*bindingPointer = val;
+            };
 
-        ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
-        ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+        }
     }
 
     // BindPropertyFunction():
     //
     // Binds a data model property to a getter/setter method within the instance data.
     //
-    template<typename TRet, typename TSetValue>
+    template<typename TRet, typename TSetValue, typename TClass>
     void BindPropertyFunction(_In_z_ const wchar_t *propertyName,
-                              _In_ TRet (TInstance::*getClassMethod)(),
-                              _In_ void (TInstance::*setClassMethod)(_In_ TSetValue),
+                              _In_ TRet (TClass::*getClassMethod)(),
+                              _In_ void (TClass::*setClassMethod)(_In_ TSetValue),
                               _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
     {
-        ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
-        auto getFunc = [linkRef = std::move(getLinkRef), this, getClassMethod](_In_ const ClientEx::Object& instanceObject)
+        static_assert(std::is_base_of_v<TClass, TInstance>, "Must use a pointer to member of the instance type to bind a property");
+        if constexpr (std::is_base_of_v<TClass, TInstance>)
         {
-            ClientEx::Details::ThrowIfDetached(linkRef);
-            auto& data = this->GetStoredInstance(instanceObject);
-            return (data.*getClassMethod)();
-        };
+            ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
+            auto getFunc = [linkRef = std::move(getLinkRef), this, getClassMethod](_In_ const ClientEx::Object& instanceObject)
+            {
+                ClientEx::Details::ThrowIfDetached(linkRef);
+                auto& data = this->GetStoredInstance(instanceObject);
+                return (data.*getClassMethod)();
+            };
 
-        ClientEx::Details::DataModelReference setLinkRef = this->GetLinkReference();
-        auto setFunc = [linkRef = std::move(setLinkRef), this, setClassMethod](_In_ const ClientEx::Object& instanceObject, _In_ TSetValue &val)
-        {
-            ClientEx::Details::ThrowIfDetached(linkRef);
-            auto& data = this->GetStoredInstance(instanceObject);
-            (data.*setClassMethod)(val);
-        };
+            ClientEx::Details::DataModelReference setLinkRef = this->GetLinkReference();
+            auto setFunc = [linkRef = std::move(setLinkRef), this, setClassMethod](_In_ const ClientEx::Object& instanceObject, _In_ TSetValue &val)
+            {
+                ClientEx::Details::ThrowIfDetached(linkRef);
+                auto& data = this->GetStoredInstance(instanceObject);
+                (data.*setClassMethod)(val);
+            };
 
-        ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
-        ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+        }
     }
 
     // BindReadOnlyProperty():
     //
     // Binds a data model property to a field within the instance data in a read-only manner.
     //
-    template<typename TData>
-    void BindReadOnlyProperty(_In_z_ const wchar_t *propertyName, 
-                              _In_ TData TInstance::* bindingPointer,
+    template<typename TData, typename TClass>
+    void BindReadOnlyProperty(_In_z_ const wchar_t *propertyName,
+                              _In_  TData TClass::* bindingPointer,
                               _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
     {
-        ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
-        auto getFunc = [linkRef = std::move(getLinkRef), this, bindingPointer](_In_ const ClientEx::Object& instanceObject)
+        static_assert(std::is_base_of_v<TClass, TInstance>, "Must use a pointer to member of the instance type to bind a property");
+        if constexpr (std::is_base_of_v<TClass, TInstance>)
         {
-            ClientEx::Details::ThrowIfDetached(linkRef);
-            auto& data = this->GetStoredInstance(instanceObject);
-            return data.*bindingPointer;
-        };
+            ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
+            auto getFunc = [linkRef = std::move(getLinkRef), this, bindingPointer](_In_ const ClientEx::Object& instanceObject)
+            {
+                ClientEx::Details::ThrowIfDetached(linkRef);
+                auto& data = this->GetStoredInstance(instanceObject);
+                return data.*bindingPointer;
+            };
 
-        auto setFunc = [this, bindingPointer](_In_ const ClientEx::Object& /*instanceObject*/, _In_ TData & /*val*/)
-        {
-            throw ClientEx::not_implemented();
-        };
+            auto setFunc = [this, bindingPointer](_In_ const ClientEx::Object& /*instanceObject*/, _In_ const ClientEx::Object & /*val*/)
+            {
+                throw ClientEx::not_implemented();
+            };
 
-        ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
-        ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+        }
     }
 
     // BindReadOnlyPropertyFunction():
     //
     // Binds a data model property to a getter method within the instance data in a read-only manner.
     //
-    template<typename TRet>
+    template<typename TRet, typename TClass>
     void BindReadOnlyPropertyFunction(_In_z_ const wchar_t *propertyName,
-                                      _In_ TRet (TInstance::*classMethod)(),
+                                      _In_ TRet (TClass::*classMethod)(),
                                       _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
     {
-        ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
-        auto getFunc = [linkRef = std::move(getLinkRef), this, classMethod](_In_ const ClientEx::Object& instanceObject)
+        static_assert(std::is_base_of_v<TClass, TInstance>, "Must use a pointer to member of the instance type to bind a property");
+        if constexpr (std::is_base_of_v<TClass, TInstance>)
         {
-            ClientEx::Details::ThrowIfDetached(linkRef);
-            auto& data = this->GetStoredInstance(instanceObject);
-            return (data.*classMethod)();
-        };
+            ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
+            auto getFunc = [linkRef = std::move(getLinkRef), this, classMethod](_In_ const ClientEx::Object& instanceObject)
+            {
+                ClientEx::Details::ThrowIfDetached(linkRef);
+                auto& data = this->GetStoredInstance(instanceObject);
+                return (data.*classMethod)();
+            };
 
-        auto setFunc = [](_In_ const ClientEx::Object& /*instanceObject*/, _In_ TRet & /*val*/)
-        {
-            throw ClientEx::not_implemented();
-        };
+            auto setFunc = [](_In_ const ClientEx::Object& /*instanceObject*/, _In_ TRet & /*val*/)
+            {
+                throw ClientEx::not_implemented();
+            };
 
-        ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
-        ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
+        }
     }
 
-    template<typename TRet>
+    template<typename TRet, typename TClass>
     void BindReadOnlyPropertyFunction(_In_z_ const wchar_t *propertyName,
-                                      _In_ TRet (TInstance::*classMethod)() const,
+                                      _In_ TRet (TClass::*classMethod)() const,
                                       _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
     {
-        BindReadOnlyPropertyFunction(propertyName, reinterpret_cast<TRet (TInstance::*)()>(classMethod), metadata);
+        static_assert(std::is_base_of_v<TClass, TInstance>, "Must use a pointer to member of the instance type to bind a property");
+        if constexpr (std::is_base_of_v<TClass, TInstance>)
+        {
+            BindReadOnlyPropertyFunction(propertyName, reinterpret_cast<TRet (TInstance::*)()>(classMethod), metadata);
+        }
     }
 
     // AddMethod():
@@ -9900,8 +10327,8 @@ protected:
     // Adds a new method.
     //
     template<typename TObj, typename TInstanceType, typename TClass, typename TRet, typename... TArgs>
-    void AddMethod(_In_z_ const wchar_t *methodName, 
-                   _In_ TClass *pDerived, 
+    void AddMethod(_In_z_ const wchar_t *methodName,
+                   _In_ TClass *pDerived,
                    _In_ TRet (TClass::*classMethod)(TObj, TInstanceType&, TArgs...),
                    _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
     {
@@ -9914,7 +10341,7 @@ protected:
         auto callDest = [linkRef = std::move(callLinkRef), pDerived, classMethod](TObj contextObj, TArgs... methodArgs)
         {
             ClientEx::Details::ThrowIfDetached(linkRef);
-            return Details::MethodInvocationBoxHelper<TClass, TRet, TObj, TInstanceType&, TArgs...>::CallAndBox(
+            return Details::MethodInvocationHelper<TClass, TRet, TObj, TInstanceType&, TArgs...>::Call(
                 pDerived,
                 classMethod,
                 contextObj,
@@ -9929,8 +10356,8 @@ protected:
     }
 
     template<typename TObj, typename TInstanceType, typename TClass, typename TRet, typename... TArgs>
-    void AddMethod(_In_z_ const wchar_t *methodName, 
-                   _In_ const TClass *pDerived, 
+    void AddMethod(_In_z_ const wchar_t *methodName,
+                   _In_ const TClass *pDerived,
                    _In_ TRet (TClass::*classMethod)(TObj, TInstanceType&, TArgs...) const,
                    _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
     {
@@ -9942,7 +10369,7 @@ protected:
     // Binds a data model method to a method on the instance data.
     //
     template<typename TClass, typename TRet, typename... TArgs>
-    void BindMethod(_In_z_ const wchar_t *methodName, 
+    void BindMethod(_In_z_ const wchar_t *methodName,
                     _In_ TRet (TClass::*classMethod)(TArgs...),
                     _In_ const ClientEx::Metadata& metadata = ClientEx::Metadata())
     {
@@ -9952,7 +10379,7 @@ protected:
             ClientEx::Details::ThrowIfDetached(linkRef);
             TClass *pInstance = &(this->GetStoredInstance(contextObj));
 
-            return Details::MethodInvocationBoxHelper<TClass, TRet, TArgs...>::CallAndBox(
+            return Details::MethodInvocationHelper<TClass, TRet, TArgs...>::Call(
                 pInstance,
                 classMethod,
                 std::forward<TArgs>(methodArgs)...
@@ -9976,35 +10403,39 @@ protected:
     //
     // Binds the string conversion of this type to a field within the instance data.
     //
-    template<typename TData>
-    void BindStringConversion(_In_ TData TInstance::* bindingPointer)
+    template<typename TData, typename TClass>
+    void BindStringConversion(_In_ TData TClass::* bindingPointer)
     {
-        ClientEx::Details::DataModelReference stringLinkRef = this->GetLinkReference();
-        auto stringProjectorFunc = [linkRef = std::move(stringLinkRef), this, bindingPointer](_In_ const ClientEx::Object& instanceObject,
-                                                                                              _In_ const ClientEx::Metadata& metadata)
+        static_assert(std::is_base_of_v<TClass, TInstance>, "Must use a pointer to member of the instance type to bind a property");
+        if constexpr (std::is_base_of_v<TClass, TInstance>)
         {
-            ClientEx::Details::ThrowIfDetached(linkRef);
+            ClientEx::Details::DataModelReference stringLinkRef = this->GetLinkReference();
+            auto stringProjectorFunc = [linkRef = std::move(stringLinkRef), this, bindingPointer](_In_ const ClientEx::Object& instanceObject,
+                                                                                                _In_ const ClientEx::Metadata& metadata)
+            {
+                ClientEx::Details::ThrowIfDetached(linkRef);
 
-            //
-            // This can be optimized if the return value is wchar_t * / std::wstring.  In order to make this as *FAITHFUL* as possible
-            // to a model based string conversion with automatic metadata handling, we box the value and take it through
-            // the standard intrinsic string conversion with the given metadata.
-            //
-            // @TODO: Remove the extra boxing for string returns.
-            //
-            auto& data = this->GetStoredInstance(instanceObject);
-            ClientEx::Object valueObj = data.*bindingPointer;
-            return valueObj.ToDisplayString(metadata);
-        };
+                //
+                // This can be optimized if the return value is wchar_t * / std::wstring.  In order to make this as *FAITHFUL* as possible
+                // to a model based string conversion with automatic metadata handling, we box the value and take it through
+                // the standard intrinsic string conversion with the given metadata.
+                //
+                // @TODO: Remove the extra boxing for string returns.
+                //
+                auto& data = this->GetStoredInstance(instanceObject);
+                ClientEx::Object valueObj = data.*bindingPointer;
+                return valueObj.ToDisplayString(metadata);
+            };
 
-        using TStringProjector = decltype(stringProjectorFunc);
+            using TStringProjector = decltype(stringProjectorFunc);
 
-        ComPtr<Details::BoundStringDisplayable<TypedInstanceModel<TInstance>, TStringProjector>> spStringDisplayable;
-        spStringDisplayable = Make<Details::BoundStringDisplayable<TypedInstanceModel<TInstance>, TStringProjector>>(
-            this, stringProjectorFunc
-            );
+            ComPtr<Details::BoundStringDisplayable<TypedInstanceModel<TInstance>, TStringProjector>> spStringDisplayable;
+            spStringDisplayable = Make<Details::BoundStringDisplayable<TypedInstanceModel<TInstance>, TStringProjector>>(
+                this, stringProjectorFunc
+                );
+        }
     }
-	
+
     // BindEquatable():
     //
     // Binds custom equality on this type to C++ operator== / operator!= within the instance data.
@@ -10097,8 +10528,8 @@ protected:
 
         using TConstructableProjector = decltype(constructableProjectorFunc);
 
-        ComPtr<Details::BoundConstructable<TypedInstanceModel<TInstance>, 
-                                           TConstructableProjector, 
+        ComPtr<Details::BoundConstructable<TypedInstanceModel<TInstance>,
+                                           TConstructableProjector,
                                            TArgs...>> spConstructable;
 
         spConstructable = Make<Details::BoundConstructable<TypedInstanceModel<TInstance>, TConstructableProjector, TArgs...>>(
@@ -10145,9 +10576,9 @@ protected:
     // Binds the string displayable implementation on this object to a method of signature const Object&, TInstance&, const Metadata&
     //
     template<typename TObj, typename TMeta, typename TRet, typename TClass, typename TData>
-    void AddStringDisplayableFunction(_In_ TClass *pDerived, 
+    void AddStringDisplayableFunction(_In_ TClass *pDerived,
                                       _In_ TRet (TClass::*stringConvClassMethod)(_In_ TObj, _In_ TData, _In_ TMeta))
-                
+
     {
         static_assert(Details::is_object_v<TObj>, "Bound string converter must take (const) Object (&) as first argument");
         static_assert(Details::is_metadata_v<TMeta>, "Bound string converter must take (const) Metadata (&) as second argument");
@@ -10169,18 +10600,18 @@ protected:
     }
 
     template<typename TObj, typename TMeta, typename TRet, typename TClass, typename TData>
-    void AddStringDisplayableFunction(_In_ const TClass *pDerived, 
+    void AddStringDisplayableFunction(_In_ const TClass *pDerived,
                                       _In_ TRet (TClass::*stringConvClassMethod)(_In_ TObj, _In_ TData, _In_ TMeta) const)
     {
         AddStringDisplayableFunction(const_cast<TClass *>(pDerived), reinterpret_cast<TRet(TClass::*)(TObj, TData, TMeta)>(stringConvClassMethod));
     }
-	
+
     // AddEquatableFunction():
     //
     // Adds the equatable implementation on this object to a method of signature bool(const Object&, TInstance&, const Object&)
     //
     template<typename TObj, typename TClass, typename TData, typename TOther>
-    void AddEquatableFunction(_In_ TClass *pDerived, 
+    void AddEquatableFunction(_In_ TClass *pDerived,
                               _In_ bool (TClass::*equatableClassMethod)(_In_ TObj, _In_ TData, _In_ TOther))
     {
         static_assert(Details::is_object_v<TObj>, "Bound equatable function must take (const) Object (&) as first argument");
@@ -10190,8 +10621,8 @@ protected:
             (TObj instanceObject, TObj otherObj)
         {
             ClientEx::Details::ThrowIfDetached(linkRef);
-            return (pDerived->*equatableClassMethod)(instanceObject, 
-                                                     pDerived->GetStoredInstance(instanceObject), 
+            return (pDerived->*equatableClassMethod)(instanceObject,
+                                                     pDerived->GetStoredInstance(instanceObject),
                                                      ClientEx::UnboxObject<TOther>(otherObj));
         };
 
@@ -10208,7 +10639,7 @@ protected:
     // Adds the equatable implementation on this object to a method of signature bool(const Object&, TInstance&, const Object&)
     //
     template<typename TObj, typename TClass, typename TData, typename TOther>
-    void AddComparableFunction(_In_ TClass *pDerived, 
+    void AddComparableFunction(_In_ TClass *pDerived,
                                _In_ int (TClass::*comparableClassMethod)(_In_ TObj, _In_ TData, _In_ TOther))
     {
         static_assert(Details::is_object_v<TObj>, "Bound equatable function must take (const) Object (&) as first argument");
@@ -10218,8 +10649,8 @@ protected:
             (TObj instanceObject, TObj otherObj)
         {
             ClientEx::Details::ThrowIfDetached(linkRef);
-            return (pDerived->*comparableClassMethod)(instanceObject, 
-                                                      pDerived->GetStoredInstance(instanceObject), 
+            return (pDerived->*comparableClassMethod)(instanceObject,
+                                                      pDerived->GetStoredInstance(instanceObject),
                                                       ClientEx::UnboxObject<TOther>(otherObj));
         };
 
@@ -10269,7 +10700,7 @@ protected:
 
     // AddDeconstructableFunction():
     //
-    // Binds the deconstructable implementation on this object to a method of signature 
+    // Binds the deconstructable implementation on this object to a method of signature
     // std::tuple<TArgs...>(const Object&, TInstance&)
     //
     template<typename TStr, typename TObj, typename TClass, typename TData, typename... TArgs>
@@ -10311,10 +10742,10 @@ protected:
     // AddGeneratorFunction():
     //
     // Adds the iterable implementation on this object to the generator (or iterable) returned from the
-    // bound class method.  The supplied generator must be copyable into the resulting data model iterator.  
+    // bound class method.  The supplied generator must be copyable into the resulting data model iterator.
     //
     template<typename TObj, typename TGen, typename TClass, typename TData>
-    void AddGeneratorFunction(_In_ TClass *pDerived, 
+    void AddGeneratorFunction(_In_ TClass *pDerived,
                               _In_ TGen (TClass::*genClassMethod)(_In_ TObj, _In_ TData))
     {
         static_assert(Details::is_object_v<TObj>, "Bound generator function must take (const) Object (&) as first argument");
@@ -10324,7 +10755,7 @@ protected:
         //     - If it returns a T&, preserve it into the bound iterator
         //     - If it returns a T, T&&, move it into the bound iterator
         //
-        using TRet = TGen; // decltype((pDerived->*genClassMethod)(ClientEx::Object(), std::declval<InstanceType>())); 
+        using TRet = TGen; // decltype((pDerived->*genClassMethod)(ClientEx::Object(), std::declval<InstanceType>()));
         using TRetBaseType = std::decay_t<TRet>;
         using TLamRet = std::conditional_t<std::is_lvalue_reference_v<TRet>, TRetBaseType&, TRetBaseType>;
 
@@ -10344,7 +10775,7 @@ protected:
         ClientEx::Details::DataModelReference iterLinkRef = this->GetLinkReference();
         ComPtr<ClientEx::Details::BoundIterable<TClass, TGenProjector, TItemProjector>> spIterable;
 
-        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>, 
+        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>,
                       "Implementation class must derive from ProviderEx:: model class");
 
         TClass *pDerivedThis = static_cast<TClass *>(this);
@@ -10360,7 +10791,7 @@ protected:
     // TIndicies... must match the indicies arguments of the bound indexer method.
     //
     template<typename TObjGen, typename TObjGet, typename TGen, typename TClass, typename TData, typename TValue, typename... TIndicies>
-    void AddReadOnlyIndexableGeneratorFunction(_In_ TClass *pDerived, 
+    void AddReadOnlyIndexableGeneratorFunction(_In_ TClass *pDerived,
                                                _In_ TGen (TClass::*generatorMethod)(_In_ TObjGen, _In_ TData),
                                                _In_ TValue (TClass::*getAtMethod)(_In_ TObjGet, _In_ TData, _In_ TIndicies... indicies))
     {
@@ -10418,7 +10849,7 @@ protected:
         ClientEx::Details::DataModelReference iterLinkRef = this->GetLinkReference();
         ComPtr<ClientEx::Details::BoundIterableWithIndexable<TClass, TGenProjector, TItemProjector, TGetAtProjector, TSetAtProjector>> spIterableIndexable;
 
-        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>, 
+        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>,
                       "Implementation class must derive from ProviderEx:: model class");
 
         TClass *pDerivedThis = static_cast<TClass *>(this);
@@ -10434,13 +10865,13 @@ protected:
     // TIndicies... must match the indicies arguments of the bound indexer method.
     //
     template<typename TObjGen, typename TObjGet, typename TObjSet,
-             typename TGen, typename TClass, typename TData1, typename TData2, typename TData3, 
+             typename TGen, typename TClass, typename TData1, typename TData2, typename TData3,
              typename TGetValue, typename TSetValue, typename... TIndicies>
-    void AddIndexableGeneratorFunction(_In_ TClass *pDerived, 
+    void AddIndexableGeneratorFunction(_In_ TClass *pDerived,
                                        _In_ TGen (TClass::*generatorMethod)(_In_ TObjGen, _In_ TData1),
                                        _In_ TGetValue (TClass::*getAtMethod)(_In_ TObjGet, _In_ TData2, _In_ TIndicies...),
                                        _In_ void (TClass::*setAtMethod)(_In_ TObjSet, _In_ TData3, _In_ TSetValue, _In_ TIndicies...))
-                                               
+
     {
         static_assert(Details::is_object_v<TObjGen>, "Bound generator function must take (const) Object (&) as first argument");
         static_assert(Details::is_object_v<TObjGet>, "Bound indexer function must take (const) Object (&) as first argument");
@@ -10476,7 +10907,7 @@ protected:
         using TItemProjector = decltype(itemProjectorFunc);
 
         ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
-        auto getProjectorFunc = [linkRef = std::move(getLinkRef), pDerived, getAtMethod](_In_ const ClientEx::Object& instanceObject, 
+        auto getProjectorFunc = [linkRef = std::move(getLinkRef), pDerived, getAtMethod](_In_ const ClientEx::Object& instanceObject,
                                                                                          _In_ TIndicies... indicies)
         {
             ClientEx::Details::ThrowIfDetached(linkRef);
@@ -10489,9 +10920,9 @@ protected:
                                                                                          _In_ TIndicies... indicies)
         {
             ClientEx::Details::ThrowIfDetached(linkRef);
-            (pDerived->*setAtMethod)(instanceObject, 
-                                     pDerived->GetStoredInstance(instanceObject), 
-                                     std::forward<TSetValue>(value), 
+            (pDerived->*setAtMethod)(instanceObject,
+                                     pDerived->GetStoredInstance(instanceObject),
+                                     std::forward<TSetValue>(value),
                                      std::forward<TIndicies>(indicies)...);
         };
 
@@ -10501,7 +10932,7 @@ protected:
         ClientEx::Details::DataModelReference iterLinkRef = this->GetLinkReference();
         ComPtr<ClientEx::Details::BoundIterableWithIndexable<TClass, TGenProjector, TItemProjector, TGetAtProjector, TSetAtProjector>> spIterableIndexable;
 
-        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>, 
+        static_assert(std::is_base_of_v<std::decay_t<decltype(*this)>, std::decay_t<TClass>>,
                       "Implementation class must derive from ProviderEx:: model class");
 
         TClass *pDerivedThis = static_cast<TClass *>(this);
@@ -10511,7 +10942,7 @@ protected:
     }
 
 private:
-    
+
     // @TODO: Why is _In_ StorageType *pStorage not okay below.  It's a typedef in the base class.  The compiler
     //        blows up on this.
     //
