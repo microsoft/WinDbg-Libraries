@@ -1447,7 +1447,7 @@ public:
     // it and the delta to the base of the symbol are returned (along with true).  If the symbol cannot be found,
     // false is returned.
     //
-    std::optional<SymbolWithOffset> TryGetContainingSymbol(_In_ ULONG64 moduleOffset)
+    std::optional<SymbolWithOffset> TryGetContainingSymbol(_In_ ULONG64 moduleOffset) const
     {
         std::optional<SymbolWithOffset> symbolWithOffset;
 
@@ -1463,7 +1463,7 @@ public:
 
         return symbolWithOffset;
     }
-    bool TryGetContainingSymbol(_In_ ULONG64 moduleOffset, _Out_ SymbolWithOffset *pResultSymbol)
+    bool TryGetContainingSymbol(_In_ ULONG64 moduleOffset, _Out_ SymbolWithOffset *pResultSymbol) const
     {
         auto sym = TryGetContainingSymbol(moduleOffset);
         if (sym)
@@ -1480,7 +1480,7 @@ public:
     // the symbol.  If such symbol cannot be found (e.g.: symbols cannot be loaded or there is no symbol at the
     // given offset), an exception is thrown.
     //
-    SymbolWithOffset GetContainingSymbol(_In_ ULONG64 moduleOffset)
+    SymbolWithOffset GetContainingSymbol(_In_ ULONG64 moduleOffset) const
     {
         SymbolWithOffset symOffs;
         if (!TryGetContainingSymbol(moduleOffset, &symOffs))
@@ -1495,14 +1495,14 @@ public:
     // Finds a type by name within the module.
     //
     template<typename TStr>
-    ClientEx::Type FindType(_In_ TStr&& typeName);
+    ClientEx::Type FindType(_In_ TStr&& typeName) const;
 
     // FindSymbol():
     //
     // Finds a symbol by name within the module.
     //
     template<typename TStr>
-    Symbol FindSymbol(_In_ TStr&& symbolName)
+    Symbol FindSymbol(_In_ TStr&& symbolName) const
     {
         ComPtr<IDebugHostSymbol> spSymbol;
         CheckHr(AsModule()->FindSymbolByName(Details::ExtractString(symbolName), &spSymbol));
@@ -3905,8 +3905,6 @@ public:
         return Object(std::move(spObj));
     }
 
-#ifdef __DBGMODEL_TEST_H__
-
     // Create():
     //
     // Creates a new empty object from metadata (key store) with the given context .
@@ -3925,8 +3923,6 @@ public:
         Details::KeyFiller<IModelObject, TArgs...>::Fill(spObj.Get(), std::forward<TArgs>(initializers)...);
         return Object(std::move(spObj));
     }
-
-#endif // __DBGMODEL_TEST_H__
 
     // CreateTyped():
     //
@@ -4002,6 +3998,33 @@ public:
         ComPtr<IModelObject> spObj;
         CheckHr(GetManager()->CreateNoValue(&spObj));
         return Object(std::move(spObj));
+    }
+
+    // CreateError():
+    //
+    // Creates an error object from an hresult and a string.
+    //
+    template<typename TStr>
+    static Object CreateError(_In_ HRESULT hr, _In_ TStr &&str)
+    {
+        ComPtr<IModelObject> spError;
+        CheckHr(GetManager()->CreateErrorObject(hr, Details::ExtractString(str), &spError));
+        return Object(std::move(spError));
+    }
+
+    // CreateError():
+    //
+    // Creates an error object from an exception pointer.
+    //
+    static Object CreateError(_In_ const std::exception_ptr& exptr)
+    {
+        ComPtr<IModelObject> spError;
+        auto hr = Details::Exceptions::ReturnResult(exptr, &spError);
+        if (!spError) {
+            CheckHr(GetManager()->CreateErrorObject(hr, nullptr, &spError));
+        }
+
+        return Object(std::move(spError));
     }
 
     // FromExpressionEvaluation():
@@ -4281,7 +4304,7 @@ public:
         CheckHr(m_spObject->GetTypeInfo(&spType));
         return ClientEx::Type(std::move(spType));
     }
-    
+
     // GetLocation():
     //
     // The location of the object.  This will throw for objects which have no location.
@@ -4325,9 +4348,49 @@ public:
         return Object(std::move(spValue));
     }
 
+    // KeyValue():
+    //
+    // Fetches a key value without the overhead of returning key references.
+    //
     Object KeyValue(_In_ const std::wstring& keyName, _Out_opt_ Metadata *pMetadata = nullptr) const
     {
         return KeyValue(keyName.c_str(), pMetadata);
+    }
+
+    // TryGetKeyValue():
+    //
+    // Fetches a key value, if it exists, without the overhead of returning key references.
+    //
+    std::optional<Object> TryGetKeyValue(_In_z_ const wchar_t *keyName, _Out_opt_ Metadata *pMetadata = nullptr) const
+    {
+        if (pMetadata != nullptr)
+        {
+            *pMetadata = Metadata();
+        }
+
+        ComPtr<IModelObject> spValue;
+        ComPtr<IKeyStore> spMetadata;
+        IKeyStore **ppMetadata = (pMetadata != nullptr) ? (IKeyStore **)&spMetadata : nullptr;
+        if (SUCCEEDED(m_spObject->GetKeyValue(keyName, &spValue, ppMetadata)))
+        {
+            if (pMetadata != nullptr)
+            {
+                *pMetadata = Metadata(std::move(spMetadata));
+            }
+
+            return Object(std::move(spValue));
+        }
+
+        return std::nullopt;
+    }
+
+    // TryGetKeyValue():
+    //
+    // Fetches a key value, if it exists, without the overhead of returning key references.
+    //
+    std::optional<Object> TryGetKeyValue(_In_ const std::wstring& keyName, _Out_opt_ Metadata *pMetadata = nullptr) const
+    {
+        return TryGetKeyValue(keyName.c_str(), pMetadata);
     }
 
     // Fields():
@@ -4350,9 +4413,39 @@ public:
         return Object(std::move(spValue));
     }
 
+    // FieldValue():
+    //
+    // Fetches a field value without the overhead of returning field references.
+    //
     Object FieldValue(_In_ const std::wstring& fieldName) const
     {
         return FieldValue(fieldName.c_str());
+    }
+
+    // TryGetFieldValue():
+    //
+    // Fetches a field, if it exists, without the overhead of returning field
+    // references.
+    //
+    std::optional<Object> TryGetFieldValue(_In_z_ const wchar_t *fieldName) const
+    {
+        ComPtr<IModelObject> spValue;
+        if (SUCCEEDED(m_spObject->GetRawValue(SymbolField, fieldName, RawSearchNone, &spValue)))
+        {
+            return Object(std::move(spValue));
+        }
+
+        return std::nullopt;
+    }
+
+    // TryGetFieldValue():
+    //
+    // Fetches a field, if it exists, without the overhead of returning field
+    // references.
+    //
+    std::optional<Object> TryGetFieldValue(_In_ const std::wstring& fieldName) const
+    {
+        return TryGetFieldValue(fieldName.c_str());
     }
 
     // Dereference():
@@ -4558,8 +4651,6 @@ public:
         return TryToDisplayString(pDisplayString, Metadata());
     }
 
-#ifdef __DBGMODEL_TEST_H__
-
     // ConstructInstance():
     //
     // If the object is constructable, this will invoke the constructor with the given set of arguments.
@@ -4584,8 +4675,6 @@ public:
     // arguments which, if supplied back to the constructor, will recreate the object).
     //
     Deconstruction Deconstruct();
-
-#endif // __DBGMODEL_TEST_H__
 
 private:
 
@@ -4642,7 +4731,7 @@ private:
 // GeneratedIterable:
 //
 // A value which represents the deferred acquisition of an iterable through a method call.  This is a helper
-// intented to allow the adaptation of an iterable described by a C++ input iterator which can be regenerated
+// intended to allow the adaptation of an iterable described by a C++ input iterator which can be regenerated
 // to the notion of a data model iterable.  Frequently, this is used to defer the acquisition of a generator
 // which is the result of a property binding or method binding.
 //
@@ -4729,8 +4818,6 @@ private:
     Metadata m_metadata;
 };
 
-#ifdef __DBGMODEL_TEST_H__
-
 // Deconstruction:
 //
 // Represents the deconstruction of an object from the deconstructable concept.  It is effectively a
@@ -4773,8 +4860,6 @@ private:
     std::vector<Object> m_arguments;
 
 };
-
-#endif // __DBGMODEL_TEST_H__
 
 //
 // ResourceString:
@@ -7081,41 +7166,59 @@ namespace Details
         }
     };
 
-    // PropertyBoxer:
+    // NotImplementedSetFunction:
     //
-    // For a pair of get/set functors, make a property and box/unbox it.
+    // A set function that throws not-implemented, used for read-only
+    // properties.
+    //
+
+    inline void NotImplementedSetFunction(_In_ const Object& /*instanceObject*/, _In_ const Object& /*value*/)
+    {
+        throw not_implemented();
+    }
+
+    // BoxProperty:
+    //
+    // For a pair of get/set functors, make a property and box it.
     //
     template<typename TGetFunc, typename TSetFunc>
-    struct PropertyBoxer
+    inline Object BoxProperty(_In_ const TGetFunc& getFunc, _In_ const TSetFunc& setFunc)
     {
-        static Object Box(_In_ const TGetFunc& getFunc, _In_ const TSetFunc& setFunc)
+        using GetterTraits = FunctorTraits<TGetFunc>;
+        using SetterTraits = FunctorTraits<TSetFunc>;
+        using Getter0Decay = std::decay_t<typename SetterTraits::template ArgumentType_t<0>>;
+        using Setter0Decay = std::decay_t<typename SetterTraits::template ArgumentType_t<0>>;
+
+        static_assert(SetterTraits::ArgumentCount == 2, "Invalid signature for property set functor");
+        static_assert(GetterTraits::ArgumentCount == 1, "Invalid signature for property get functor");
+        static_assert(std::is_same_v<Getter0Decay, Object>, "Invalid signature for property get functor");
+        static_assert(std::is_same_v<Setter0Decay, Object>, "Invalid signature for property set functor");
+
+        ComPtr<BoxedProperty<TGetFunc, TSetFunc>> spPropertyInterface = Make<BoxedProperty<TGetFunc, TSetFunc>>(getFunc, setFunc);
+        if (spPropertyInterface == nullptr)
         {
-            using GetterTraits = FunctorTraits<TGetFunc>;
-            using SetterTraits = FunctorTraits<TSetFunc>;
-            using Getter0Decay = std::decay_t<typename SetterTraits::template ArgumentType_t<0>>;
-            using Setter0Decay = std::decay_t<typename SetterTraits::template ArgumentType_t<0>>;
-
-            static_assert(SetterTraits::ArgumentCount == 2, "Invalid signature for property set functor");
-            static_assert(GetterTraits::ArgumentCount == 1, "Invalid signature for property get functor");
-            static_assert(std::is_same_v<Getter0Decay, Object>, "Invalid signature for property get functor");
-            static_assert(std::is_same_v<Setter0Decay, Object>, "Invalid signature for property set functor");
-
-            //return PropertyBoxerHelper<TGetFunc, TSetFunc>::Box(getFunc, setFunc);
-            ComPtr<BoxedProperty<TGetFunc, TSetFunc>> spPropertyInterface = Make<BoxedProperty<TGetFunc, TSetFunc>>(getFunc, setFunc);
-            if (spPropertyInterface == nullptr)
-            {
-                throw std::bad_alloc();
-            }
-
-            // @TODO: This should be part of the boxer.
-            VARIANT vtVal;
-            vtVal.vt = VT_UNKNOWN;
-            vtVal.punkVal = static_cast<IModelPropertyAccessor *>(spPropertyInterface.Get());
-            ComPtr<IModelObject> spProperty;
-            CheckHr(GetManager()->CreateIntrinsicObject(ObjectPropertyAccessor, &vtVal, &spProperty));
-            return Object(std::move(spProperty));
+            throw std::bad_alloc();
         }
-    };
+
+        // @TODO: This should be part of the boxer.
+        VARIANT vtVal;
+        vtVal.vt = VT_UNKNOWN;
+        vtVal.punkVal = static_cast<IModelPropertyAccessor *>(spPropertyInterface.Get());
+        ComPtr<IModelObject> spProperty;
+        CheckHr(GetManager()->CreateIntrinsicObject(ObjectPropertyAccessor, &vtVal, &spProperty));
+        return Object(std::move(spProperty));
+    }
+
+    // BoxProperty:
+    //
+    // For a get functor, make a property and box it. The implicit set functor
+    // will throw not_implemented.
+    //
+    template <typename TGetFunc>
+    inline Object BoxProperty(_In_ const TGetFunc& getFunc)
+    {
+        return BoxProperty(getFunc, &NotImplementedSetFunction);
+    }
 
     // BoxObjectArray:
     //
@@ -7622,7 +7725,7 @@ namespace Boxing
                 throw not_implemented();
             };
 
-            return Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            return Details::BoxProperty(getFunc, setFunc);
         }
     };
 
@@ -7727,6 +7830,18 @@ namespace Boxing
             }
         }
 
+        static Object Box(_Inout_ std::optional<T>&& src)
+        {
+            if (src.has_value())
+            {
+                return BoxObject<T>::Box(*std::move(src));
+            }
+            else
+            {
+                return Object::CreateNoValue();
+            }
+        }
+
         static std::optional<T> Unbox(_In_ const Object& src)
         {
             ModelObjectKind mk;
@@ -7813,12 +7928,21 @@ namespace Boxing
     };
 
 #ifdef DBGMODELCLIENTEX_NO_GENERATOR_BOXING
+
+    template<typename TGen>
+    struct IsGenerator : public std::false_type { };
+
+    template<typename TGen>
+    struct IsGenerator<std::experimental::generator<TGen>> : public std::true_type { };
+
+    template<typename TGen> constexpr bool IsGenerator_v = IsGenerator<TGen>::value;
+
     template<typename TGen>
     struct BoxObject<std::experimental::generator<TGen>>
     {
         static Object Box(_In_ const std::experimental::generator<TGen>& src)
         {
-            static_assert(false, "Boxing of a std::experimental::generator<T> results in an object which can only ever be iterated once!");
+            static_assert(!IsGenerator_v<std::experimental::generator<TGen>>, "Boxing of a std::experimental::generator<T> results in an object which can only ever be iterated once!");
             return Object();
         }
     };
@@ -7920,7 +8044,7 @@ inline Module Symbol::ContainingModule() const
 //
 
 template<typename TStr>
-Type Module::FindType(_In_ TStr&& typeName)
+Type Module::FindType(_In_ TStr&& typeName) const
 {
     ComPtr<IDebugHostType> spType;
     CheckHr(AsModule()->FindTypeByName(ClientEx::Details::ExtractString(typeName), &spType));
@@ -8056,8 +8180,6 @@ void Metadata::SetKeys(_In_ TArgs&&... initializers)
     Details::KeyFiller<IKeyStore, TArgs...>::Fill(m_spKeyStore.Get(), std::forward<TArgs>(initializers)...);
 }
 
-#ifdef __DBGMODEL_TEST_H__
-
 inline Deconstruction Object::Deconstruct()
 {
     ComPtr<IDeconstructableConcept> spDeconstructable;
@@ -8094,8 +8216,6 @@ inline Object Object::ConstructInstance(Deconstruction& deconstruction)
     CheckHr(spConstructable->CreateInstance(size, reinterpret_cast<IModelObject **>(pack.get()), &spInstance));
     return Object(std::move(spInstance));
 }
-
-#endif // __DBGMODEL_TEST_H__
 
 namespace Details
 {
@@ -8476,8 +8596,6 @@ private:
     ClientEx::Metadata m_metadata;
 };
 
-#ifdef __DBGMODEL_TEST_H__
-
 class FilteredNamespacePropertyParent
 {
 public:
@@ -8620,8 +8738,6 @@ private:
     std::function< ClientEx::Object(void)> m_createFilter;
     ComPtr<IFilteredNamespacePropertyToken> m_spToken;
 };
-
-#endif // __DBGMODEL_TEST_H__
 
 namespace Details
 {
@@ -8889,8 +9005,6 @@ namespace Details
     };
 
 
-#ifdef __DBGMODEL_TEST_H__
-
     template<typename TClass, typename TConstructableProjector, typename... TArgs>
     class BoundConstructable :
         public Microsoft::WRL::RuntimeClass<
@@ -9045,8 +9159,6 @@ namespace Details
 
     };
 
-#endif // __DBGMODEL_TEST_H__
-
     constexpr ULONG64 GetSigHash(_In_z_ const char *pc)
     {
         ULONG64 hash = 2166136261u; // FNV offset basis
@@ -9164,22 +9276,34 @@ namespace Details
         }
     };
 
-    struct EmptyVerification { static void Verify() { } };
+    // IsValidTypedInstanceRegistrationType:
+    //
+    // Support for detecting whether a given registration record for a TypedInstanceModel is valid or not
+    //
+    template<typename TReg> 
+    struct IsValidTypedInstanceRegistrationType : std::false_type { };
+
+    template<> 
+    struct IsValidTypedInstanceRegistrationType<NamedModelRegistration> : std::true_type { };
+
+    template<typename TReg> constexpr bool IsValidTypedInstanceRegistrationType_v = 
+        IsValidTypedInstanceRegistrationType<TReg>::value;
 
     template<typename TReg>
     struct TypedInstanceRegistrationVerification
     {
         static void Verify()
         {
-            static_assert(false, "Illegal registration kind for a TypedInstanceModel<T>");
+            static_assert(IsValidTypedInstanceRegistrationType_v<TReg>, 
+                          "Illegal registration kind for a TypedInstanceModel<T>");
         }
     };
+
+    struct EmptyVerification { static void Verify() { } };
 
     //
     // Legal Registration Records for TypedInstanceModel<T>:
     //
-    template<> struct TypedInstanceRegistrationVerification<NamedModelRegistration> : public EmptyVerification { };
-
     template<typename... TArgs> struct VerifyTypedInstanceRegistrations : public EmptyVerification { };
 
     template<typename TArg, typename... TArgs>
@@ -9383,7 +9507,7 @@ public:
             using TValue = std::invoke_result_t<TGetFunc, ClientEx::Object>;
             static_assert(std::is_invocable_v<TSetFunc, ClientEx::Object, TValue>, "Bound property setter must take (const) Object (&) as first argument");
 
-            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<TGetFunc, TSetFunc>::Box(getFunction, setFunction);
+            ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunction, setFunction);
             ClientEx::CheckHr(GetObject()->SetKey(propertyName, propertyAccessor, metadata));
         }
     }
@@ -9412,7 +9536,7 @@ public:
             (pDerived->*setClassMethod)(instanceObject, val);
         };
 
-        ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+        ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunc, setFunc);
         ClientEx::CheckHr(GetObject()->SetKey(propertyName, propertyAccessor, metadata));
     }
 
@@ -9424,14 +9548,7 @@ public:
         static_assert(std::is_invocable_v<TGetFunc, ClientEx::Object>, "Bound property getter must take (const) Object (&) as first argument");
         if constexpr (std::is_invocable_v<TGetFunc, ClientEx::Object>) // Prevent noise from failure of the assertion above
         {
-            using TValue = std::invoke_result_t<TGetFunc, ClientEx::Object>;
-
-            auto setFunc = [](_In_ const ClientEx::Object& /*instanceObject*/, _In_ const TValue& /*anyValue*/)
-            {
-                throw ClientEx::not_implemented();
-            };
-
-            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<TGetFunc, decltype(setFunc)>::Box(getFunction, setFunc);
+            ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunction);
             ClientEx::CheckHr(GetObject()->SetKey(propertyName, propertyAccessor, metadata));
         }
     }
@@ -9451,12 +9568,7 @@ public:
             return (pDerived->*getClassMethod)(instanceObject);
         };
 
-        auto setFunc = [](_In_ const ClientEx::Object& /*instanceObject*/, _In_ const ClientEx::Object& /*anyValue*/)
-        {
-            throw ClientEx::not_implemented();
-        };
-
-        ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+        ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunc);
         ClientEx::CheckHr(GetObject()->SetKey(propertyName, propertyAccessor, metadata));
     }
 
@@ -10090,7 +10202,7 @@ protected:
                 setFunction(instanceObject, this->GetStoredInstance(instanceObject), val);
             };
 
-            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunc, setFunc);
             ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
         }
     }
@@ -10119,7 +10231,7 @@ protected:
             (pDerived->*setClassMethod)(instanceObject, pDerived->GetStoredInstance(instanceObject), val);
         };
 
-        ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+        ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunc, setFunc);
         ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
     }
 
@@ -10131,8 +10243,6 @@ protected:
         static_assert(std::is_invocable_v<TGetFunc, ClientEx::Object, TInstance&>, "Bound property getter must take (const) Object (&) as first argument and the instance type as the second");
         if constexpr (std::is_invocable_v<TGetFunc, ClientEx::Object, TInstance&>) // Prevent noise from failure of the assertion above
         {
-            using TValue = std::invoke_result_t<TGetFunc, ClientEx::Object, TInstance&>;
-
             ClientEx::Details::DataModelReference getLinkRef = this->GetLinkReference();
             auto getFunc = [linkRef = std::move(getLinkRef), this, getFunction](_In_ const ClientEx::Object& instanceObject)
             {
@@ -10140,12 +10250,7 @@ protected:
                 return getFunction(instanceObject, this->GetStoredInstance(instanceObject));
             };
 
-            auto setFunc = [](_In_ const ClientEx::Object& /*instanceObject*/, _In_ const TValue& /*anyValue*/)
-            {
-                throw ClientEx::not_implemented();
-            };
-
-            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunc);
             ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
         }
     }
@@ -10165,12 +10270,7 @@ protected:
             return (pDerived->*getClassMethod)(instanceObject, pDerived->GetStoredInstance(instanceObject));
         };
 
-        auto setFunc = [](_In_ const ClientEx::Object& /*instanceObject*/, _In_ const ClientEx::Object& /*anyValue*/)
-        {
-            throw ClientEx::not_implemented();
-        };
-
-        ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+        ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunc);
         ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
     }
 
@@ -10211,7 +10311,7 @@ protected:
                 data.*bindingPointer = val;
             };
 
-            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunc, setFunc);
             ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
         }
     }
@@ -10245,7 +10345,7 @@ protected:
                 (data.*setClassMethod)(val);
             };
 
-            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunc, setFunc);
             ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
         }
     }
@@ -10270,12 +10370,7 @@ protected:
                 return data.*bindingPointer;
             };
 
-            auto setFunc = [this, bindingPointer](_In_ const ClientEx::Object& /*instanceObject*/, _In_ const ClientEx::Object & /*val*/)
-            {
-                throw ClientEx::not_implemented();
-            };
-
-            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunc);
             ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
         }
     }
@@ -10300,12 +10395,7 @@ protected:
                 return (data.*classMethod)();
             };
 
-            auto setFunc = [](_In_ const ClientEx::Object& /*instanceObject*/, _In_ TRet & /*val*/)
-            {
-                throw ClientEx::not_implemented();
-            };
-
-            ClientEx::Object propertyAccessor = ClientEx::Details::PropertyBoxer<decltype(getFunc), decltype(setFunc)>::Box(getFunc, setFunc);
+            ClientEx::Object propertyAccessor = ClientEx::Details::BoxProperty(getFunc);
             ClientEx::CheckHr(this->GetObject()->SetKey(propertyName, propertyAccessor, metadata));
         }
     }
@@ -10505,8 +10595,6 @@ protected:
             );
     }
 
-#ifdef __DBGMODEL_TEST_H__
-
     // BindConstructable():
     //
     // Binds a certain form of the constructor as given by the inpassed template pack to the constructable
@@ -10564,8 +10652,6 @@ protected:
             this, pStr, deconstructableProjectorFunc
             );
     }
-
-#endif // __DBGMODEL_TEST_H__
 
     //*************************************************
     // Function Binders (ExtensionModel style with instance argument):
@@ -10662,8 +10748,6 @@ protected:
             );
     }
 
-#ifdef __DBGMODEL_TEST_H__
-
     // AddConstructableFunction():
     //
     // Binds the constructable implementation on this object to a method of signature TArgs...
@@ -10736,8 +10820,6 @@ protected:
                                           const_cast<TClass *>(pDerived),
                                           reinterpret_cast<std::tuple<TArgs...> (TClass::*)(_In_ TObj, _In_ TData)>(deconstructableMethod));
     }
-
-#endif // __DBGMODEL_TEST_H__
 
     // AddGeneratorFunction():
     //
