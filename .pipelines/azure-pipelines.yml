@@ -1,0 +1,23 @@
+
+trigger:
+- master
+
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+
+- task: NuGetCommand@2
+  inputs:
+    command: 'pack'
+    packagesToPack: 'DbgModelCppLib.nuspec'
+    versioningScheme: 'off'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
+
