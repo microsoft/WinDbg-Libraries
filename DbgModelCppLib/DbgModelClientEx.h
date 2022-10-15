@@ -34,11 +34,7 @@
 #undef GetObject
 #endif // GetObject
 
-namespace Debugger
-{
-namespace DataModel
-{
-namespace ClientEx
+namespace Debugger::DataModel::ClientEx
 {
 
 namespace Details
