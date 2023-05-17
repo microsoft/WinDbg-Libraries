@@ -447,7 +447,7 @@ TDestSymbol symbol_cast(_In_ IDebugHostSymbol *pSymbol)
         throw std::bad_cast();
     }
 
-    ComPtr<TDestSymbol::SymbolTypeInterface> spDerivedSymbolInterface;
+    ComPtr<typename TDestSymbol::SymbolTypeInterface> spDerivedSymbolInterface;
     CheckHr(pSymbol->QueryInterface(IID_PPV_ARGS(&spDerivedSymbolInterface)));
     return TDestSymbol(std::move(spDerivedSymbolInterface));
 }
@@ -3562,6 +3562,15 @@ namespace Details
         }
     };
 
+    template<typename T, typename... TArgs>
+    ParameterPack PackValuesHelper(TArgs&&... args)
+    {
+        size_t packSize = sizeof...(args);
+        ParameterPack argPack(new T[packSize]);
+        Packer<0, TArgs...>::PackInto(argPack, std::forward<TArgs>(args)...);
+        return argPack;
+    }
+
     // PackValues():
     //
     // Packs a set of arguments into an allocated array of objects and returns it.
@@ -3569,10 +3578,7 @@ namespace Details
     template<typename... TArgs>
     ParameterPack PackValues(TArgs&&... args)
     {
-        size_t packSize = sizeof...(args);
-        ParameterPack argPack(new Object[packSize]);
-        Packer<0, TArgs...>::PackInto(argPack, std::forward<TArgs>(args)...);
-        return argPack;
+        return PackValuesHelper<Object>(std::forward<TArgs>(args)...);
     }
 
     template<size_t i, size_t count, typename TTuple>
