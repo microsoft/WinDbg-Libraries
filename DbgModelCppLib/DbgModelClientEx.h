@@ -5830,7 +5830,6 @@ namespace Details
         //
         constexpr size_t extraArgumentCount = sizeof...(extraValues);
         constexpr size_t packIgnoreCount = extraArgumentCount + 1;          // + 1 == const Object& (instanceObject)
-        constexpr size_t signaturePackCount = sizeof...(TArgs);
         constexpr size_t minPackSize = PackMatchingSize_WithIgnore_v<packIgnoreCount, TArgs...>;
 
         //
@@ -5878,7 +5877,6 @@ namespace Details
         //
         constexpr size_t extraArgumentCount = 0;
         constexpr size_t packIgnoreCount = extraArgumentCount + 0;
-        constexpr size_t signaturePackCount = sizeof...(TArgs);
         constexpr size_t minPackSize = PackMatchingSize_WithIgnore_v<packIgnoreCount, TArgs...>;
 
         //
