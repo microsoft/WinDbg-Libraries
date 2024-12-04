@@ -1114,6 +1114,50 @@ public:
         return (IDebugHostContext *)(*this);
     }
 
+    bool operator==(_In_ const HostContext& otherContext) const
+    {
+        if (m_isDeferred)
+        {
+            return Current().operator==(otherContext);
+        }
+
+        bool isEqual = false;
+        if (m_spHostContext == nullptr && otherContext.m_spHostContext == nullptr)
+        {
+            isEqual = true;
+        }
+        else if (m_spHostContext != nullptr && otherContext.m_spHostContext != nullptr)
+        {
+            CheckHr(m_spHostContext->IsEqualTo(otherContext, &isEqual));
+        }
+        return isEqual;
+    }
+    bool operator==(_In_ IDebugHostContext *pOtherContext) const
+    {
+        if (m_isDeferred)
+        {
+            return Current().operator==(pOtherContext);
+        }
+        bool isEqual = false;
+        if (m_spHostContext == nullptr && pOtherContext == nullptr)
+        {
+            isEqual = true;
+        }
+        else if (m_spHostContext != nullptr && pOtherContext != nullptr)
+        {
+            CheckHr(m_spHostContext->IsEqualTo(pOtherContext, &isEqual));
+        }
+        return isEqual;
+    }
+    bool operator!=(_In_ const HostContext& otherContext) const
+    {
+        return !operator==(otherContext);
+    }
+    bool operator!=(_In_ IDebugHostContext *pOtherContext) const
+    {
+        return !operator==(pOtherContext);
+    }
+
     // Current():
     //
     // Returns the current context of the host.
@@ -3302,7 +3346,7 @@ namespace Details
             return &m_value;
         }
 
-        bool operator==(_In_ const ObjectIterator& rhs)
+        bool operator==(_In_ const ObjectIterator& rhs) const
         {
             if (m_value.GetObject() == nullptr && rhs.m_value.GetObject() == nullptr)
             {
@@ -3316,7 +3360,7 @@ namespace Details
             return false;
         }
 
-        bool operator!=(_In_ const ObjectIterator& rhs)
+        bool operator!=(_In_ const ObjectIterator& rhs) const
         {
             return !operator==(rhs);
         }
@@ -3687,12 +3731,47 @@ public:
                                                                                 &m_spTypeSignature));
     }
 
+    // TypeSignature(signature, moduleName, allowLooseNameMatch)
+    //
+    // Creates a type signature for a type whose name and module name match the supplied signatures.  The module
+    // name can either loosely match or strictly match (e.g.: image name only)
+    //
+    template<typename TStr1, typename TStr2>
+    TypeSignature(_In_ TStr1&& signature, _In_ TStr2&& moduleName, _In_ bool allowLooseNameMatch)
+    {
+        const wchar_t *pSignature = Details::ExtractString(signature);
+        const wchar_t *pModuleName = Details::ExtractString(moduleName);
+
+        if (allowLooseNameMatch)
+        {
+            ComPtr<IDebugHostSymbols3> spHostSym3;
+            ClientEx::CheckHr(ClientEx::GetHost()->QueryInterface(IID_PPV_ARGS(&spHostSym3)));
+            ClientEx::CheckHr(spHostSym3->CreateTypeSignatureForModuleRange2(pSignature,
+                                                                                    pModuleName,
+                                                                                    allowLooseNameMatch,
+                                                                                    nullptr,
+                                                                                    nullptr,
+                                                                                    &m_spTypeSignature));
+        }
+        else
+        {
+            ComPtr<IDebugHostSymbols> spHostSym;
+            ClientEx::CheckHr(ClientEx::GetHost()->QueryInterface(IID_PPV_ARGS(&spHostSym)));
+            ClientEx::CheckHr(spHostSym->CreateTypeSignatureForModuleRange(pSignature,
+                                                                                    pModuleName,
+                                                                                    nullptr,
+                                                                                    nullptr,
+                                                                                    &m_spTypeSignature));
+        }
+    }
+
     // TypeSignature(signature, moduleName, minVersion)
     //
     // Creates a type signature for a type whose name and module name match the supplied signatures.  The module must
     // be at least the specified version.
     //
-    template<typename TStr1, typename TStr2, typename TStr3>
+    template<typename TStr1, typename TStr2, typename TStr3,
+             typename = std::enable_if_t<!std::is_same_v<typename std::decay_t<TStr3>, bool>>>
     TypeSignature(_In_ TStr1&& signature, _In_ TStr2&& moduleName, _In_ TStr3&& minVersion)
     {
         const wchar_t *pSignature = Details::ExtractString(signature);
@@ -3707,12 +3786,49 @@ public:
                                                                                 &m_spTypeSignature));
     }
 
+    // TypeSignature(signature, moduleName, allowLooseNameMatch, minVersion)
+    //
+    // Creates a type signature for a type whose name and module name match the supplied signatures.  The module
+    // name can either loosely match or strictly match (e.g.: image name only).  The module must
+    // be at least the specified version.
+    //
+    template<typename TStr1, typename TStr2, typename TStr3>
+    TypeSignature(_In_ TStr1&& signature, _In_ TStr2&& moduleName, _In_ bool allowLooseNameMatch, _In_ TStr3&& minVersion)
+    {
+        const wchar_t *pSignature = Details::ExtractString(signature);
+        const wchar_t *pModuleName = Details::ExtractString(moduleName);
+        const wchar_t *pMinVersion = Details::ExtractString(minVersion);
+
+        if (allowLooseNameMatch)
+        {
+            ComPtr<IDebugHostSymbols3> spHostSym3;
+            ClientEx::CheckHr(ClientEx::GetHost()->QueryInterface(IID_PPV_ARGS(&spHostSym3)));
+            ClientEx::CheckHr(spHostSym3->CreateTypeSignatureForModuleRange2(pSignature,
+                                                                                    pModuleName,
+                                                                                    allowLooseNameMatch,
+                                                                                    pMinVersion,
+                                                                                    nullptr,
+                                                                                    &m_spTypeSignature));
+        }
+        else
+        {
+            ComPtr<IDebugHostSymbols> spHostSym;
+            ClientEx::CheckHr(ClientEx::GetHost()->QueryInterface(IID_PPV_ARGS(&spHostSym)));
+            ClientEx::CheckHr(spHostSym->CreateTypeSignatureForModuleRange(pSignature,
+                                                                                    pModuleName,
+                                                                                    pMinVersion,
+                                                                                    nullptr,
+                                                                                    &m_spTypeSignature));
+        }
+    }
+
     // TypeSignature(signature, moduleName, minVersion, maxVersion)
     //
     // Creates a type signature for a type whose name and module name match the supplied signatures.  The module must
     // be at least the specified min version and no more than the max version.
     //
-    template<typename TStr1, typename TStr2, typename TStr3, typename TStr4>
+    template<typename TStr1, typename TStr2, typename TStr3, typename TStr4,
+             typename = std::enable_if_t<!std::is_same_v<typename std::decay_t<TStr3>,bool>>>
     TypeSignature(_In_ TStr1&& signature, _In_ TStr2&& moduleName, _In_ TStr3&& minVersion, _In_ TStr4&& maxVersion)
     {
         const wchar_t *pSignature = Details::ExtractString(signature);
@@ -3726,6 +3842,48 @@ public:
                                                                                 pMinVersion,
                                                                                 pMaxVersion,
                                                                                 &m_spTypeSignature));
+    }
+
+    // TypeSignature(signature, moduleName, allowLooseNameMatch, minVersion, maxVersion)
+    //
+    // Creates a type signature for a type whose name and module name match the supplied signatures.  The module
+    // name can either loosely match or strictly match (e.g.: image name only).  The module must
+    // be at least the specified min version and no more than the max version.
+    //
+    template<typename TStr1, typename TStr2, typename TStr3, typename TStr4,
+             typename = std::enable_if_t<!std::is_same_v<typename std::decay_t<TStr3>,bool>>>
+    TypeSignature(_In_ TStr1&& signature, 
+                  _In_ TStr2&& moduleName, 
+                  _In_ bool allowLooseNameMatch,
+                  _In_ TStr3&& minVersion, 
+                  _In_ TStr4&& maxVersion)
+    {
+        const wchar_t *pSignature = Details::ExtractString(signature);
+        const wchar_t *pModuleName = Details::ExtractString(moduleName);
+        const wchar_t *pMinVersion = Details::ExtractString(minVersion);
+        const wchar_t *pMaxVersion = Details::ExtractString(maxVersion);
+
+        if (allowLooseNameMatch)
+        {
+            ComPtr<IDebugHostSymbols3> spHostSym3;
+            ClientEx::CheckHr(ClientEx::GetHost()->QueryInterface(IID_PPV_ARGS(&spHostSym3)));
+            ClientEx::CheckHr(spHostSym3->CreateTypeSignatureForModuleRange2(pSignature,
+                                                                                    pModuleName,
+                                                                                    allowLooseNameMatch,
+                                                                                    pMinVersion,
+                                                                                    pMaxVersion,
+                                                                                    &m_spTypeSignature));
+        }
+        else
+        {
+            ComPtr<IDebugHostSymbols> spHostSym;
+            ClientEx::CheckHr(ClientEx::GetHost()->QueryInterface(IID_PPV_ARGS(&spHostSym)));
+            ClientEx::CheckHr(spHostSym->CreateTypeSignatureForModuleRange(pSignature,
+                                                                                    pModuleName,
+                                                                                    pMinVersion,
+                                                                                    pMaxVersion,
+                                                                                    &m_spTypeSignature));
+        }
     }
 
     operator IDebugHostTypeSignature* () const { return m_spTypeSignature.Get(); }
@@ -3778,6 +3936,7 @@ public:
     IKeyStore *Detach() { return m_spKeyStore.Detach(); }
 
     Object KeyValue(_In_z_ const wchar_t *keyName) const;
+    std::optional<Object> TryGetKeyValue(_In_z_ const wchar_t *keyName) const;
 
     template<typename... TArgs,
              typename = std::enable_if_t<!Details::IsCopyMove_v<Metadata, TArgs...>>>
@@ -5911,7 +6070,7 @@ namespace Details
                                 _Outptr_opt_result_maybenull_ IKeyStore **ppMetadata,
                                 _In_ TExtraValues&&... extraValues)
     {
-        return InvokeFunctionFromPack(FunctorTraits<TFunc>::FunctionType(func),
+        return InvokeFunctionFromPack(typename FunctorTraits<TFunc>::FunctionType(func),
                                       contextObj,
                                       packSize,
                                       pArgumentPack,
@@ -7866,7 +8025,22 @@ namespace Boxing
     {
         static Object Box(_In_ const HostContext& src)
         {
-            Object boxedObject = static_cast<IDebugHostContext *>(src);
+            Object boxedObject;
+
+            //
+            // If the context is a "deferred current" context, we must realize the context before
+            // we attempt to box it.
+            //
+            IDebugHostContext *pContext = static_cast<IDebugHostContext *>(src);
+            if (pContext == USE_CURRENT_HOST_CONTEXT)
+            {
+                boxedObject = HostContext::Current();
+            }
+            else
+            {
+                boxedObject = static_cast<IDebugHostContext *>(src);
+            }
+
             return boxedObject;
         }
 
@@ -8083,6 +8257,17 @@ inline Object Metadata::KeyValue(_In_z_ const wchar_t *keyName) const
     CheckHr(m_spKeyStore->GetKeyValue(keyName, &spValue, nullptr));
     Object value = std::move(spValue);
     return value;
+}
+
+inline std::optional<Object> Metadata::TryGetKeyValue(_In_z_ const wchar_t *keyName) const
+{
+    ComPtr<IModelObject> spValue;
+    if (SUCCEEDED(m_spKeyStore->GetKeyValue(keyName, &spValue, nullptr)))
+    {
+        return Object(std::move(spValue));
+    }
+
+    return std::nullopt;
 }
 
 template<typename TArg, typename TEnable>
@@ -10018,7 +10203,7 @@ public:
 
 protected:
 
-    using IteratorType = decltype(std::declval<BaseTypedInstanceModel<TInstance>::InstanceType>().begin());
+    using IteratorType = decltype(std::declval<typename BaseTypedInstanceModel<TInstance>::InstanceType>().begin());
     using ElementReference = typename std::iterator_traits<IteratorType>::reference;
     using ElementValue = typename std::iterator_traits<IteratorType>::value_type;
 
