@@ -9447,7 +9447,7 @@ namespace Details
     template<typename TArg, typename... TArgs>
     struct ExtensionNameAcquisition<TArg, TArgs...>
     {
-        static void FillName(_Inout_ std::wstring& modelName, _In_ TArg record, _In_ const TArgs&... records)
+        static void FillName(_Inout_ std::wstring& modelName, _In_ TArg /*record*/, _In_ const TArgs&... records)
         {
             return ExtensionNameAcquisition<TArgs...>::FillName(modelName, records...);
         }
