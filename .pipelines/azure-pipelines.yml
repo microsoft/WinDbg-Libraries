@@ -19,7 +19,7 @@ steps:
 
 - task: CopyFiles@2
   inputs:
-    SourceFolder: 'DbgModelCppLib/bin/Release'
+    SourceFolder: 'bin/Release'
     Contents: '**/*.nupkg'
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
