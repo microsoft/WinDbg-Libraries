@@ -10,6 +10,12 @@
     <PackageProjectUrl>https://aka.ms/DbgModelCppLib</PackageProjectUrl>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+  
+  
+    <!-- Disable build output -->
+    <NoBuild>true</NoBuild>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
   </PropertyGroup>
 
   <ItemGroup>
