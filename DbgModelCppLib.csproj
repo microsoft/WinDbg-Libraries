@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>Microsoft.Debugging.DataModel.CppLib</PackageId>
+    <Version>1.0.5</Version>
+    <Description>A header-only C++ library for producing and consuming data from the debugger data model.</Description>
+    <Authors>Microsoft</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://aka.ms/DbgModelCppLib</PackageProjectUrl>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="DbgModelCppLib\DbgModelClientEx.h" Pack="true" PackagePath="build/native/include" />
+    <None Include="DbgModelCppLib\Microsoft.Debugging.DataModel.CppLib.targets" Pack="true" PackagePath="build/native" />
+  </ItemGroup>
+</Project>

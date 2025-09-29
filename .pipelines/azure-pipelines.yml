@@ -9,11 +9,13 @@ pool:
 
 steps:
 
-- task: NuGetCommand@2
+- task: UseDotNet@2
   inputs:
-    command: 'pack'
-    packagesToPack: 'DbgModelCppLib.nuspec'
-    versioningScheme: 'off'
+    packageType: 'sdk'
+    version: '8.0.413'
+
+- script: dotnet pack DbgModelCppLib.csproj --configuration Release
+  displayName: 'Pack NuGet with dotnet CLI'
 
 - task: PublishBuildArtifacts@1
   inputs:
