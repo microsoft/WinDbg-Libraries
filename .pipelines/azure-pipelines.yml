@@ -17,6 +17,12 @@ steps:
 - script: dotnet pack DbgModelCppLib.csproj --configuration Release
   displayName: 'Pack NuGet with dotnet CLI'
 
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: 'bin/Release'
+    Contents: '**/*.nupkg'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
